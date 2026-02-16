@@ -13,7 +13,7 @@ interface SessionMapProps {
 }
 
 const TILE_URL = MAPTILER_API_KEY
-  ? `https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${MAPTILER_API_KEY}`
+  ? `https://tile.openstreetmap.org/{z}/{x}/{y}.png`
   : undefined;
 
 export function SessionMap({

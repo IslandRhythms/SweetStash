@@ -14,13 +14,12 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
-  getCandyLogs,
   getFirstProfile,
   getProfile,
   getSessionStats,
   getSessions,
 } from '@/lib/db';
-import type { CandyLog, Session } from '@/types';
+import type { Session } from '@/types';
 
 export default function HistoryScreen() {
   const db = useSQLiteContext();
@@ -29,7 +28,6 @@ export default function HistoryScreen() {
   const { profile, loadStoredProfile } = useProfile();
   const [ready, setReady] = useState(false);
   const [sessions, setSessions] = useState<(Session & { candyCount?: number; houseCount?: number })[]>([]);
-  const [standaloneCandy, setStandaloneCandy] = useState<CandyLog[]>([]);
 
   useEffect(() => {
     loadStoredProfile({
@@ -49,10 +47,6 @@ export default function HistoryScreen() {
           })
         );
         setSessions(withStats);
-
-        const allCandy = await getCandyLogs(db, profile.id);
-        const standalone = allCandy.filter((c) => c.session_id == null);
-        setStandaloneCandy(standalone);
       })();
     }
   }, [profile, db]);
@@ -98,25 +92,6 @@ export default function HistoryScreen() {
           color: theme.colors.textMuted,
           marginTop: 2,
         },
-        sectionTitle: {
-          fontSize: theme.fontSize.lg,
-          fontWeight: '600',
-          color: theme.colors.text,
-          marginTop: theme.spacing.xl,
-          marginBottom: theme.spacing.md,
-        },
-        candyRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: theme.colors.surface,
-          padding: theme.spacing.md,
-          borderRadius: theme.borderRadius.md,
-          marginBottom: theme.spacing.sm,
-          gap: theme.spacing.sm,
-        },
-        candyText: { flex: 1, fontSize: theme.fontSize.md, color: theme.colors.text },
-        candyDate: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
-        more: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted, marginTop: theme.spacing.xs },
       }),
     [theme]
   );
@@ -133,7 +108,7 @@ export default function HistoryScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Past trick-or-treat sessions</Text>
 
-      {sessions.length === 0 && standaloneCandy.length === 0 ? (
+      {sessions.length === 0 ? (
         <Text style={styles.empty}>
           No sessions yet. Start trick-or-treating to see your history here!
         </Text>
@@ -167,27 +142,6 @@ export default function HistoryScreen() {
             );
           })}
 
-          {standaloneCandy.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Logged without session</Text>
-              {standaloneCandy.slice(0, 10).map((c) => (
-                <View key={c.id} style={styles.candyRow}>
-                  <FontAwesome name="gift" size={20} color={theme.colors.textMuted} />
-                  <Text style={styles.candyText}>
-                    {c.candy_name} × {c.quantity}
-                  </Text>
-                  <Text style={styles.candyDate}>
-                    {new Date(c.created_at).toLocaleDateString()}
-                  </Text>
-                </View>
-              ))}
-              {standaloneCandy.length > 10 && (
-                <Text style={styles.more}>
-                  +{standaloneCandy.length - 10} more
-                </Text>
-              )}
-            </>
-          )}
         </>
       )}
       <View style={{ height: theme.spacing.xl * 2 }} />

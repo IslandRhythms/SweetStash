@@ -59,9 +59,7 @@ function StackWrapper() {
   );
 }
 
-export {
-  ErrorBoundary,
-} from 'expo-router';
+export { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',

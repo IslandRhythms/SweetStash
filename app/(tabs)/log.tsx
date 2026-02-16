@@ -1,9 +1,9 @@
-import { useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -21,19 +21,27 @@ import {
   createCandyLog,
   createHouse,
   getActiveSession,
+  getCandyLogs,
   getFirstProfile,
+  getHouses,
   getProfile,
 } from '@/lib/db';
+import { getImageUri } from '@/lib/images';
+import type { CandyLog, House } from '@/types';
+import { Image } from 'react-native';
 
-type Tab = 'candy' | 'house';
+type Mode = 'view' | 'add';
+type AddTab = 'candy' | 'house';
 
 export default function LogScreen() {
   const db = useSQLiteContext();
-  const router = useRouter();
   const theme = useTheme();
   const { profile, loadStoredProfile } = useProfile();
-  const [tab, setTab] = useState<Tab>('candy');
+  const [mode, setMode] = useState<Mode>('view');
+  const [tab, setTab] = useState<AddTab>('candy');
   const [ready, setReady] = useState(false);
+  const [candyLogs, setCandyLogs] = useState<CandyLog[]>([]);
+  const [houses, setHouses] = useState<House[]>([]);
 
   // Candy form
   const [candyName, setCandyName] = useState('');
@@ -64,18 +72,32 @@ export default function LogScreen() {
     }
   }, [profile, db]);
 
+  const loadData = useCallback(async () => {
+    if (!profile) return;
+    const [candy, houseList] = await Promise.all([
+      getCandyLogs(db, profile.id),
+      getHouses(db, profile.id),
+    ]);
+    setCandyLogs(candy);
+    setHouses(houseList);
+  }, [profile, db]);
+
+  useEffect(() => {
+    if (profile) loadData();
+  }, [profile, loadData]);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
         container: { flex: 1, backgroundColor: theme.colors.background },
         center: { justifyContent: 'center', alignItems: 'center' },
-        tabs: {
+        modeTabs: {
           flexDirection: 'row',
           padding: theme.spacing.md,
           gap: theme.spacing.sm,
           backgroundColor: theme.colors.surface,
         },
-        tab: {
+        modeTab: {
           flex: 1,
           flexDirection: 'row',
           alignItems: 'center',
@@ -85,11 +107,58 @@ export default function LogScreen() {
           borderRadius: theme.borderRadius.md,
           backgroundColor: theme.colors.border,
         },
-        tabActive: { backgroundColor: theme.colors.primary },
-        tabText: { fontSize: theme.fontSize.md, color: theme.colors.textMuted },
-        tabTextActive: { color: '#fff', fontWeight: '600' },
+        modeTabActive: { backgroundColor: theme.colors.primary },
+        modeTabText: { fontSize: theme.fontSize.md, color: theme.colors.textMuted },
+        modeTabTextActive: { color: '#fff', fontWeight: '600' },
+        addTabs: {
+          flexDirection: 'row',
+          padding: theme.spacing.sm,
+          gap: theme.spacing.sm,
+          backgroundColor: theme.colors.background,
+        },
+        addTab: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: theme.spacing.sm,
+          padding: theme.spacing.sm,
+          borderRadius: theme.borderRadius.md,
+          backgroundColor: theme.colors.border,
+        },
+        addTabActive: { backgroundColor: theme.colors.primary },
+        addTabText: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
+        addTabTextActive: { color: '#fff', fontWeight: '600' },
         scroll: { flex: 1 },
         scrollContent: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl * 2 },
+        sectionTitle: {
+          fontSize: theme.fontSize.lg,
+          fontWeight: '600',
+          color: theme.colors.text,
+          marginBottom: theme.spacing.md,
+        },
+        empty: {
+          fontSize: theme.fontSize.md,
+          color: theme.colors.textMuted,
+          textAlign: 'center',
+          marginBottom: theme.spacing.lg,
+        },
+        row: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          marginBottom: theme.spacing.sm,
+        },
+        rowThumb: {
+          width: 40,
+          height: 40,
+          borderRadius: theme.borderRadius.sm,
+          marginRight: theme.spacing.md,
+        },
+        rowText: { flex: 1, fontSize: theme.fontSize.md, color: theme.colors.text },
+        rowMeta: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
         label: {
           fontSize: theme.fontSize.md,
           fontWeight: '600',
@@ -158,6 +227,7 @@ export default function LogScreen() {
       setCandyName('');
       setCandyQty('1');
       setCandyImage(null);
+      await loadData();
       Alert.alert('Yum!', `Added ${name} to your haul!`);
     } catch (e) {
       console.error(e);
@@ -186,6 +256,7 @@ export default function LogScreen() {
       setHouseName('');
       setHouseNotes('');
       setHouseImage(null);
+      await loadData();
       Alert.alert(
         'Got it!',
         activeSessionId
@@ -202,127 +273,216 @@ export default function LogScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.tabs}>
+      <View style={styles.modeTabs}>
         <Pressable
-          style={[styles.tab, tab === 'candy' && styles.tabActive]}
-          onPress={() => setTab('candy')}
+          style={[styles.modeTab, mode === 'view' && styles.modeTabActive]}
+          onPress={() => setMode('view')}
         >
           <FontAwesome
-            name="gift"
+            name="list"
             size={20}
-            color={tab === 'candy' ? '#fff' : theme.colors.textMuted}
+            color={mode === 'view' ? '#fff' : theme.colors.textMuted}
           />
-          <Text style={[styles.tabText, tab === 'candy' && styles.tabTextActive]}>
-            Candy
+          <Text style={[styles.modeTabText, mode === 'view' && styles.modeTabTextActive]}>
+            See my stash
           </Text>
         </Pressable>
         <Pressable
-          style={[styles.tab, tab === 'house' && styles.tabActive]}
-          onPress={() => setTab('house')}
+          style={[styles.modeTab, mode === 'add' && styles.modeTabActive]}
+          onPress={() => setMode('add')}
         >
           <FontAwesome
-            name="home"
+            name="plus-circle"
             size={20}
-            color={tab === 'house' ? '#fff' : theme.colors.textMuted}
+            color={mode === 'add' ? '#fff' : theme.colors.textMuted}
           />
-          <Text style={[styles.tabText, tab === 'house' && styles.tabTextActive]}>
-            House
+          <Text style={[styles.modeTabText, mode === 'add' && styles.modeTabTextActive]}>
+            Add treats
           </Text>
         </Pressable>
       </View>
 
-      <DismissKeyboardScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        {tab === 'candy' ? (
-          <>
-            <Text style={styles.label}>Candy name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Snickers, Skittles"
-              placeholderTextColor={theme.colors.textMuted}
-              value={candyName}
-              onChangeText={setCandyName}
-            />
-            <Text style={styles.label}>Quantity</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="1"
-              placeholderTextColor={theme.colors.textMuted}
-              value={candyQty}
-              onChangeText={setCandyQty}
-              keyboardType="number-pad"
-            />
-            <Text style={styles.label}>Photo (optional)</Text>
-            <ImagePickerButton
-              value={candyImage}
-              onChange={setCandyImage}
-              onEdit
-            />
-            {activeSessionId && (
-              <Pressable
-                style={styles.checkRow}
-                onPress={() => setLinkToSession(!linkToSession)}
-              >
-                <FontAwesome
-                  name={linkToSession ? 'check-square' : 'square-o'}
-                  size={24}
-                  color={theme.colors.primary}
+      {mode === 'view' ? (
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.sectionTitle}>My candy</Text>
+          {candyLogs.length === 0 ? (
+            <Text style={styles.empty}>No candy logged yet. Tap &quot;Add treats&quot; to add some!</Text>
+          ) : (
+            candyLogs.slice(0, 30).map((c) => (
+              <View key={c.id} style={styles.row}>
+                {c.image_path && (
+                  <Image
+                    source={{ uri: getImageUri(c.image_path)! }}
+                    style={styles.rowThumb}
+                  />
+                )}
+                <Text style={styles.rowText}>
+                  {c.candy_name} × {c.quantity}
+                </Text>
+                <Text style={styles.rowMeta}>
+                  {new Date(c.created_at).toLocaleDateString()}
+                </Text>
+              </View>
+            ))
+          )}
+          {candyLogs.length > 30 && (
+            <Text style={styles.rowMeta}>+{candyLogs.length - 30} more</Text>
+          )}
+
+          <Text style={[styles.sectionTitle, { marginTop: theme.spacing.lg }]}>
+            My houses
+          </Text>
+          {houses.length === 0 ? (
+            <Text style={styles.empty}>No houses yet. Tap &quot;Add treats&quot; to add some!</Text>
+          ) : (
+            houses.map((h) => (
+              <View key={h.id} style={styles.row}>
+                {h.image_path ? (
+                  <Image
+                    source={{ uri: getImageUri(h.image_path)! }}
+                    style={styles.rowThumb}
+                  />
+                ) : (
+                  <View style={[styles.rowThumb, { backgroundColor: theme.colors.border, justifyContent: 'center', alignItems: 'center' }]}>
+                    <FontAwesome name="home" size={20} color={theme.colors.textMuted} />
+                  </View>
+                )}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowText}>{h.name}</Text>
+                  {h.notes ? (
+                    <Text style={[styles.rowMeta, { marginTop: 2 }]}>{h.notes}</Text>
+                  ) : null}
+                </View>
+              </View>
+            ))
+          )}
+          <View style={{ height: theme.spacing.xl * 2 }} />
+        </ScrollView>
+      ) : (
+        <>
+          <View style={styles.addTabs}>
+            <Pressable
+              style={[styles.addTab, tab === 'candy' && styles.addTabActive]}
+              onPress={() => setTab('candy')}
+            >
+              <FontAwesome
+                name="gift"
+                size={18}
+                color={tab === 'candy' ? '#fff' : theme.colors.textMuted}
+              />
+              <Text style={[styles.addTabText, tab === 'candy' && styles.addTabTextActive]}>
+                Candy
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.addTab, tab === 'house' && styles.addTabActive]}
+              onPress={() => setTab('house')}
+            >
+              <FontAwesome
+                name="home"
+                size={18}
+                color={tab === 'house' ? '#fff' : theme.colors.textMuted}
+              />
+              <Text style={[styles.addTabText, tab === 'house' && styles.addTabTextActive]}>
+                House
+              </Text>
+            </Pressable>
+          </View>
+
+          <DismissKeyboardScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+            {tab === 'candy' ? (
+              <>
+                <Text style={styles.label}>Candy name</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Snickers, Skittles"
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={candyName}
+                  onChangeText={setCandyName}
                 />
-                <Text style={styles.checkLabel}>Link to current session</Text>
-              </Pressable>
+                <Text style={styles.label}>Quantity</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="1"
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={candyQty}
+                  onChangeText={setCandyQty}
+                  keyboardType="number-pad"
+                />
+                <Text style={styles.label}>Photo (optional)</Text>
+                <ImagePickerButton
+                  value={candyImage}
+                  onChange={setCandyImage}
+                  onEdit
+                />
+                {activeSessionId && (
+                  <Pressable
+                    style={styles.checkRow}
+                    onPress={() => setLinkToSession(!linkToSession)}
+                  >
+                    <FontAwesome
+                      name={linkToSession ? 'check-square' : 'square-o'}
+                      size={24}
+                      color={theme.colors.primary}
+                    />
+                    <Text style={styles.checkLabel}>Link to current session</Text>
+                  </Pressable>
+                )}
+                <Pressable
+                  style={[
+                    styles.submitBtn,
+                    submittingCandy && styles.submitBtnDisabled,
+                  ]}
+                  onPress={submitCandy}
+                  disabled={submittingCandy}
+                >
+                  <Text style={styles.submitBtnText}>
+                    {submittingCandy ? 'Adding...' : 'Add candy'}
+                  </Text>
+                </Pressable>
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>House name or address</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. 123 Main St, Spooky house"
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={houseName}
+                  onChangeText={setHouseName}
+                />
+                <Text style={styles.label}>Notes (optional)</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Scary decorations, gave full-size bars..."
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={houseNotes}
+                  onChangeText={setHouseNotes}
+                  multiline
+                />
+                <Text style={styles.label}>Photo (optional)</Text>
+                <ImagePickerButton
+                  value={houseImage}
+                  onChange={setHouseImage}
+                  onEdit
+                />
+                <Pressable
+                  style={[
+                    styles.submitBtn,
+                    submittingHouse && styles.submitBtnDisabled,
+                  ]}
+                  onPress={submitHouse}
+                  disabled={submittingHouse}
+                >
+                  <Text style={styles.submitBtnText}>
+                    {submittingHouse ? 'Adding...' : 'Add house'}
+                  </Text>
+                </Pressable>
+              </>
             )}
-            <Pressable
-              style={[
-                styles.submitBtn,
-                submittingCandy && styles.submitBtnDisabled,
-              ]}
-              onPress={submitCandy}
-              disabled={submittingCandy}
-            >
-              <Text style={styles.submitBtnText}>
-                {submittingCandy ? 'Adding...' : 'Add candy'}
-              </Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={styles.label}>House name or address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. 123 Main St, Spooky house"
-              placeholderTextColor={theme.colors.textMuted}
-              value={houseName}
-              onChangeText={setHouseName}
-            />
-            <Text style={styles.label}>Notes (optional)</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Scary decorations, gave full-size bars..."
-              placeholderTextColor={theme.colors.textMuted}
-              value={houseNotes}
-              onChangeText={setHouseNotes}
-              multiline
-            />
-            <Text style={styles.label}>Photo (optional)</Text>
-            <ImagePickerButton
-              value={houseImage}
-              onChange={setHouseImage}
-              onEdit
-            />
-            <Pressable
-              style={[
-                styles.submitBtn,
-                submittingHouse && styles.submitBtnDisabled,
-              ]}
-              onPress={submitHouse}
-              disabled={submittingHouse}
-            >
-              <Text style={styles.submitBtnText}>
-                {submittingHouse ? 'Adding...' : 'Add house'}
-              </Text>
-            </Pressable>
-          </>
-        )}
-      </DismissKeyboardScrollView>
+          </DismissKeyboardScrollView>
+        </>
+      )}
     </View>
   );
 }
