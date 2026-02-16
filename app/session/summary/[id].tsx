@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +22,7 @@ import {
   getSessionStats,
 } from '@/lib/db';
 import { getImageUri } from '@/lib/images';
-import type { CandyLog, LocationPoint, Session } from '@/types';
+import type { CandyLog, House, LocationPoint, Session } from '@/types';
 import { Image } from 'react-native';
 
 export default function SessionSummaryScreen() {
@@ -33,7 +34,7 @@ export default function SessionSummaryScreen() {
   const [points, setPoints] = useState<LocationPoint[]>([]);
   const [candy, setCandy] = useState<CandyLog[]>([]);
   const [houseVisits, setHouseVisits] = useState<
-    { house?: { name: string } }[]
+    { house?: House }[]
   >([]);
   const [stats, setStats] = useState({ candyCount: 0, houseCount: 0 });
   const [costumeName, setCostumeName] = useState<string | null>(null);
@@ -144,6 +145,20 @@ export default function SessionSummaryScreen() {
           color: theme.colors.text,
           marginBottom: theme.spacing.xs,
         },
+        doneBtn: {
+          backgroundColor: theme.colors.primary,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+          alignItems: 'center',
+          marginTop: theme.spacing.lg,
+          marginBottom: theme.spacing.xl,
+        },
+        doneBtnPressed: { opacity: 0.9 },
+        doneBtnText: {
+          fontSize: theme.fontSize.lg,
+          fontWeight: '600',
+          color: '#fff',
+        },
       }),
     [theme]
   );
@@ -172,7 +187,18 @@ export default function SessionSummaryScreen() {
       <Text style={styles.title}>Session complete!</Text>
 
       <View style={styles.mapWrap}>
-        <SessionMap coordinates={coords} style={styles.map} />
+        <SessionMap
+          coordinates={coords}
+          houses={houseVisits
+            .filter((v) => v.house?.latitude != null && v.house?.longitude != null)
+            .map((v) => ({
+              id: v.house!.id,
+              name: v.house!.name,
+              latitude: v.house!.latitude!,
+              longitude: v.house!.longitude!,
+            }))}
+          style={styles.map}
+        />
       </View>
 
       <View style={styles.stats}>
@@ -226,7 +252,14 @@ export default function SessionSummaryScreen() {
         </>
       )}
 
-      <View style={{ height: theme.spacing.xl * 2 }} />
+      <Pressable
+        style={({ pressed }) => [styles.doneBtn, pressed && styles.doneBtnPressed]}
+        onPress={() => router.replace('/(tabs)')}
+      >
+        <Text style={styles.doneBtnText}>Done</Text>
+      </Pressable>
+
+      <View style={{ height: theme.spacing.xl }} />
     </ScrollView>
   );
 }

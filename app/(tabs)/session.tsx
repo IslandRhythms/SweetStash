@@ -3,8 +3,10 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -20,7 +22,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import {
   addHouseVisit,
   addLocationPoint,
+  createCandyLog,
   createCostume,
+  createHouse,
   createSession,
   endSession,
   getActiveSession,
@@ -43,13 +47,21 @@ export default function SessionScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [points, setPoints] = useState<LocationPoint[]>([]);
   const [costumes, setCostumes] = useState<{ id: number; name: string }[]>([]);
-  const [houses, setHouses] = useState<{ id: number; name: string }[]>([]);
+  const [houses, setHouses] = useState<{ id: number; name: string; latitude: number | null; longitude: number | null }[]>([]);
   const [visitedHouseIds, setVisitedHouseIds] = useState<Set<number>>(new Set());
   const [selectedCostumeId, setSelectedCostumeId] = useState<number | null>(null);
   const [newCostumeName, setNewCostumeName] = useState('');
   const [addingCostume, setAddingCostume] = useState(false);
   const [starting, setStarting] = useState(false);
   const [ending, setEnding] = useState(false);
+  const [showCandyModal, setShowCandyModal] = useState(false);
+  const [showHouseModal, setShowHouseModal] = useState(false);
+  const [candyName, setCandyName] = useState('');
+  const [candyQty, setCandyQty] = useState('1');
+  const [submittingCandy, setSubmittingCandy] = useState(false);
+  const [houseName, setHouseName] = useState('');
+  const [houseNotes, setHouseNotes] = useState('');
+  const [submittingHouse, setSubmittingHouse] = useState(false);
   const subRef = useRef<{ remove: () => void } | null>(null);
 
   useEffect(() => {
@@ -72,14 +84,14 @@ export default function SessionScreen() {
             setCostumes(c.map((x) => ({ id: x.id, name: x.name })))
           );
           getHouses(db, profile.id).then((h) =>
-            setHouses(h.map((x) => ({ id: x.id, name: x.name })))
+            setHouses(h.map((x) => ({ id: x.id, name: x.name, latitude: x.latitude, longitude: x.longitude })))
           );
         } else {
           getCostumes(db, profile.id).then((c) =>
             setCostumes(c.map((x) => ({ id: x.id, name: x.name })))
           );
           getHouses(db, profile.id).then((h) =>
-            setHouses(h.map((x) => ({ id: x.id, name: x.name })))
+            setHouses(h.map((x) => ({ id: x.id, name: x.name, latitude: x.latitude, longitude: x.longitude })))
           );
         }
       });
@@ -148,6 +160,65 @@ export default function SessionScreen() {
       Alert.alert('Error', 'Could not start session.');
     } finally {
       setStarting(false);
+    }
+  }
+
+  async function handleAddCandy() {
+    if (!session || !profile) return;
+    const name = candyName.trim();
+    if (!name) {
+      Alert.alert('Oops!', 'Enter a candy name.');
+      return;
+    }
+    const qty = parseInt(candyQty, 10) || 1;
+    if (qty < 1) {
+      Alert.alert('Oops!', 'Quantity must be at least 1.');
+      return;
+    }
+    setSubmittingCandy(true);
+    try {
+      await createCandyLog(db, profile.id, name, qty, {
+        sessionId: session.id,
+        image_path: null,
+      });
+      setCandyName('');
+      setCandyQty('1');
+      setShowCandyModal(false);
+      Alert.alert('Yum!', `Added ${name} to your haul!`);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not add candy.');
+    } finally {
+      setSubmittingCandy(false);
+    }
+  }
+
+  async function handleAddHouse() {
+    if (!session || !profile) return;
+    const name = houseName.trim();
+    if (!name) {
+      Alert.alert('Oops!', 'Enter a house name or address.');
+      return;
+    }
+    setSubmittingHouse(true);
+    try {
+      const houseId = await createHouse(db, profile.id, name, {
+        notes: houseNotes.trim() || null,
+        image_path: null,
+      });
+      const id = Number(houseId);
+      await addHouseVisit(db, session.id, id);
+      setHouses((prev) => [...prev, { id, name, latitude: null, longitude: null }]);
+      setVisitedHouseIds((prev) => new Set([...prev, id]));
+      setHouseName('');
+      setHouseNotes('');
+      setShowHouseModal(false);
+      Alert.alert('Got it!', `Added ${name} to your session!`);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not add house.');
+    } finally {
+      setSubmittingHouse(false);
     }
   }
 
@@ -297,6 +368,55 @@ export default function SessionScreen() {
           fontWeight: '600',
           color: '#fff',
         },
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: theme.spacing.lg,
+        },
+        modalContent: {
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.borderRadius.lg,
+          padding: theme.spacing.lg,
+          width: '100%',
+          maxWidth: 400,
+          maxHeight: '80%',
+        },
+        modalTitle: {
+          fontSize: theme.fontSize.xl,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: theme.spacing.lg,
+        },
+        modalLabel: {
+          fontSize: theme.fontSize.md,
+          fontWeight: '600',
+          color: theme.colors.text,
+          marginBottom: theme.spacing.xs,
+        },
+        modalInput: {
+          backgroundColor: theme.colors.background,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.md,
+          fontSize: theme.fontSize.md,
+          color: theme.colors.text,
+          marginBottom: theme.spacing.md,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+        },
+        modalTextArea: { minHeight: 60, textAlignVertical: 'top' as const },
+        modalRow: { flexDirection: 'row', gap: theme.spacing.md, marginTop: theme.spacing.md },
+        modalBtn: {
+          flex: 1,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.md,
+          alignItems: 'center',
+        },
+        modalBtnPrimary: { backgroundColor: theme.colors.primary },
+        modalBtnSecondary: { backgroundColor: theme.colors.border },
+        modalBtnText: { fontSize: theme.fontSize.md, fontWeight: '600', color: theme.colors.text },
+        modalBtnTextPrimary: { color: '#fff' },
       }),
     [theme]
   );
@@ -317,47 +437,68 @@ export default function SessionScreen() {
 
     return (
       <View style={styles.container}>
-        <View style={styles.mapWrap}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+        <View style={[styles.mapWrap, { margin: theme.spacing.lg, marginBottom: theme.spacing.md }]}>
           <SessionMap
             coordinates={coords}
+            houses={houses
+              .filter((h): h is { id: number; name: string; latitude: number; longitude: number } =>
+                h.latitude != null && h.longitude != null
+              )
+              .map((h) => ({ id: h.id, name: h.name, latitude: h.latitude, longitude: h.longitude }))}
             showCurrentLocation
             style={styles.map}
           />
         </View>
-        <View style={styles.actions}>
+        <View style={[styles.actions, { paddingHorizontal: theme.spacing.lg, paddingBottom: theme.spacing.xl * 2 }]}>
           <Text style={styles.status}>
             Tracking your route... {points.length} points
           </Text>
-          {houses.length > 0 && (
-            <View style={styles.houseVisits}>
-              <Text style={styles.houseVisitsLabel}>Mark house visit:</Text>
-              <View style={styles.houseChips}>
-                {houses
-                  .filter((h) => !visitedHouseIds.has(h.id))
-                  .map((h) => (
-                    <Pressable
-                      key={h.id}
-                      style={({ pressed }) => [
-                        styles.houseChip,
-                        pressed && styles.houseChipPressed,
-                      ]}
-                      onPress={async () => {
-                        await addHouseVisit(db, session.id, h.id);
-                        setVisitedHouseIds((prev) => new Set([...prev, h.id]));
-                      }}
-                    >
-                      <Text style={styles.houseChipText}>{h.name}</Text>
-                    </Pressable>
-                  ))}
-              </View>
+          <View style={styles.houseVisits}>
+            <Text style={styles.houseVisitsLabel}>Mark house visit:</Text>
+            <View style={styles.houseChips}>
+              {houses
+                .filter((h) => !visitedHouseIds.has(h.id))
+                .map((h) => (
+                  <Pressable
+                    key={h.id}
+                    style={({ pressed }) => [
+                      styles.houseChip,
+                      pressed && styles.houseChipPressed,
+                    ]}
+                    onPress={async () => {
+                      await addHouseVisit(db, session.id, h.id);
+                      setVisitedHouseIds((prev) => new Set([...prev, h.id]));
+                    }}
+                  >
+                    <Text style={styles.houseChipText}>{h.name}</Text>
+                  </Pressable>
+                ))}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.houseChip,
+                  { backgroundColor: theme.colors.border },
+                  pressed && styles.houseChipPressed,
+                ]}
+                onPress={() => setShowHouseModal(true)}
+              >
+                <Text style={[styles.houseChipText, { color: theme.colors.text }]}>
+                  + Add house
+                </Text>
+              </Pressable>
             </View>
-          )}
+          </View>
           <View style={styles.row}>
             <Pressable
               style={({ pressed }) => [styles.btn, pressed && styles.btnPressed]}
-              onPress={() => router.push('/(tabs)/log')}
+              onPress={() => setShowCandyModal(true)}
             >
-              <FontAwesome name="plus-square" size={24} color="#fff" />
+              <FontAwesome name="gift" size={24} color="#fff" />
               <Text style={styles.btnText}>Log candy</Text>
             </Pressable>
             <Pressable
@@ -370,6 +511,119 @@ export default function SessionScreen() {
             </Pressable>
           </View>
         </View>
+        </ScrollView>
+
+        <Modal
+          visible={showCandyModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowCandyModal(false)}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowCandyModal(false)}>
+            <ScrollView
+              style={styles.modalContent}
+              contentContainerStyle={{ flexGrow: 1 }}
+              keyboardShouldPersistTaps="handled"
+              onStartShouldSetResponder={() => true}
+            >
+              <Text style={styles.modalTitle}>Log candy</Text>
+              <Text style={styles.modalLabel}>Candy name</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. Snickers, Skittles"
+                placeholderTextColor={theme.colors.textMuted}
+                value={candyName}
+                onChangeText={setCandyName}
+              />
+              <Text style={styles.modalLabel}>Quantity</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="1"
+                placeholderTextColor={theme.colors.textMuted}
+                value={candyQty}
+                onChangeText={setCandyQty}
+                keyboardType="number-pad"
+              />
+              <View style={styles.modalRow}>
+                <Pressable
+                  style={[styles.modalBtn, styles.modalBtnSecondary]}
+                  onPress={() => setShowCandyModal(false)}
+                >
+                  <Text style={styles.modalBtnText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.modalBtn,
+                    styles.modalBtnPrimary,
+                    submittingCandy && { opacity: 0.7 },
+                  ]}
+                  onPress={handleAddCandy}
+                  disabled={submittingCandy || !candyName.trim()}
+                >
+                  <Text style={[styles.modalBtnText, styles.modalBtnTextPrimary]}>
+                    {submittingCandy ? 'Adding...' : 'Add'}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </Pressable>
+        </Modal>
+
+        <Modal
+          visible={showHouseModal}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowHouseModal(false)}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowHouseModal(false)}>
+            <ScrollView
+              style={styles.modalContent}
+              contentContainerStyle={{ flexGrow: 1 }}
+              keyboardShouldPersistTaps="handled"
+              onStartShouldSetResponder={() => true}
+            >
+              <Text style={styles.modalTitle}>Add house</Text>
+              <Text style={styles.modalLabel}>House name or address</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. 123 Main St, Spooky house"
+                placeholderTextColor={theme.colors.textMuted}
+                value={houseName}
+                onChangeText={setHouseName}
+              />
+              <Text style={styles.modalLabel}>Notes (optional)</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalTextArea]}
+                placeholder="Great decorations, full-size bars..."
+                placeholderTextColor={theme.colors.textMuted}
+                value={houseNotes}
+                onChangeText={setHouseNotes}
+                multiline
+              />
+              <View style={styles.modalRow}>
+                <Pressable
+                  style={[styles.modalBtn, styles.modalBtnSecondary]}
+                  onPress={() => setShowHouseModal(false)}
+                >
+                  <Text style={styles.modalBtnText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.modalBtn,
+                    styles.modalBtnPrimary,
+                    submittingHouse && { opacity: 0.7 },
+                  ]}
+                  onPress={handleAddHouse}
+                  disabled={submittingHouse || !houseName.trim()}
+                >
+                  <Text style={[styles.modalBtnText, styles.modalBtnTextPrimary]}>
+                    {submittingHouse ? 'Adding...' : 'Add'}
+                  </Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </Pressable>
+        </Modal>
       </View>
     );
   }
