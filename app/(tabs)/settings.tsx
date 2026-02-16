@@ -13,7 +13,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useSQLiteContext } from 'expo-sqlite';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
 import { useProfile } from '@/contexts/ProfileContext';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useTheme, useThemePreference } from '@/contexts/ThemeContext';
 import { createProfile, getFirstProfile, getProfile, getProfiles } from '@/lib/db';
 import { runSeed } from '@/lib/runSeed';
 import type { Profile } from '@/types';
@@ -21,6 +21,7 @@ import type { Profile } from '@/types';
 export default function SettingsScreen() {
   const db = useSQLiteContext();
   const theme = useTheme();
+  const { themePreference, setThemePreference } = useThemePreference();
   const { profile, setProfile } = useProfile();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,6 +201,37 @@ export default function SettingsScreen() {
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
+      <Text style={styles.sectionTitle}>Theme</Text>
+      <Text style={styles.sectionSubtitle}>
+        Choose light, dark, or follow your device.
+      </Text>
+      <View style={[styles.list, { marginBottom: theme.spacing.xl }]}>
+        {(['light', 'dark', 'system'] as const).map((pref) => (
+          <Pressable
+            key={pref}
+            style={({ pressed }) => [
+              styles.card,
+              pressed && styles.cardPressed,
+              themePreference === pref && styles.cardSelected,
+            ]}
+            onPress={() => setThemePreference(pref)}
+          >
+            <FontAwesome
+              name={pref === 'light' ? 'sun-o' : pref === 'dark' ? 'moon-o' : 'mobile'}
+              size={24}
+              color={themePreference === pref ? theme.colors.primary : theme.colors.textMuted}
+              style={{ marginRight: theme.spacing.md }}
+            />
+            <Text style={styles.cardName}>
+              {pref === 'light' ? 'Light' : pref === 'dark' ? 'Dark' : 'Follow device'}
+            </Text>
+            {themePreference === pref && (
+              <FontAwesome name="check" size={24} color={theme.colors.primary} />
+            )}
+          </Pressable>
+        ))}
+      </View>
+
       <Text style={styles.sectionTitle}>Profile</Text>
       <Text style={styles.sectionSubtitle}>
         Who&apos;s tracking candy? Tap to switch.
