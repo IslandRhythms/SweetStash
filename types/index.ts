@@ -38,6 +38,7 @@ export interface House {
   notes: string | null;
   image_path: string | null;
   created_at: string;
+  is_favorite?: 0 | 1;
 }
 
 export interface HouseVisit {

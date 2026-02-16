@@ -10,7 +10,7 @@ import type {
 } from '@/types';
 
 const DATABASE_NAME = 'sweetstash.db';
-const DATABASE_VERSION = 3;
+const DATABASE_VERSION = 4;
 
 export async function migrateDb(db: SQLite.SQLiteDatabase) {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
@@ -118,6 +118,18 @@ export async function migrateDb(db: SQLite.SQLiteDatabase) {
       `);
     }
     await db.execAsync(`PRAGMA user_version = 3`);
+  }
+
+  if (currentVersion < 4) {
+    const cols = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(houses)'
+    );
+    if (!cols.some((c) => c.name === 'is_favorite')) {
+      await db.execAsync(`
+        ALTER TABLE houses ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;
+      `);
+    }
+    await db.execAsync(`PRAGMA user_version = 4`);
   }
 }
 
@@ -285,7 +297,7 @@ export async function getHouses(
   profileId: number
 ): Promise<House[]> {
   return db.getAllAsync<House>(
-    'SELECT * FROM houses WHERE profile_id = ? ORDER BY created_at DESC',
+    'SELECT * FROM houses WHERE profile_id = ? ORDER BY is_favorite DESC, created_at DESC',
     profileId
   );
 }
@@ -316,7 +328,7 @@ export async function createHouse(
 export async function updateHouse(
   db: SQLite.SQLiteDatabase,
   id: number,
-  data: Partial<Pick<House, 'name' | 'latitude' | 'longitude' | 'notes' | 'image_path'>>
+  data: Partial<Pick<House, 'name' | 'latitude' | 'longitude' | 'notes' | 'image_path' | 'is_favorite'>>
 ): Promise<void> {
   const updates: string[] = [];
   const values: (string | number | null)[] = [];
@@ -340,6 +352,10 @@ export async function updateHouse(
     updates.push('image_path = ?');
     values.push(data.image_path);
   }
+  if (data.is_favorite !== undefined) {
+    updates.push('is_favorite = ?');
+    values.push(data.is_favorite);
+  }
   if (updates.length > 0) {
     values.push(id);
     await db.runAsync(
@@ -347,6 +363,18 @@ export async function updateHouse(
       ...values
     );
   }
+}
+
+export async function setHouseFavorite(
+  db: SQLite.SQLiteDatabase,
+  id: number,
+  isFavorite: boolean
+): Promise<void> {
+  await db.runAsync(
+    'UPDATE houses SET is_favorite = ? WHERE id = ?',
+    isFavorite ? 1 : 0,
+    id
+  );
 }
 
 export async function getHouse(

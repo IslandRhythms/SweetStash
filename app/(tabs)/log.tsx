@@ -27,6 +27,7 @@ import {
   getHouses,
   getProfile,
   setCandyFavorite,
+  setHouseFavorite,
 } from '@/lib/db';
 import { getImageUri } from '@/lib/images';
 import type { CandyLog, House } from '@/types';
@@ -546,26 +547,45 @@ export default function LogScreen() {
               <Text style={styles.empty}>No houses yet.{'\n'}Tap &quot;Add house&quot; to add some!</Text>
             </View>
           ) : (
-            houses.map((h) => (
-              <View key={h.id} style={styles.card}>
-                {h.image_path ? (
-                  <Image
-                    source={{ uri: getImageUri(h.image_path)! }}
-                    style={styles.rowThumb}
-                  />
-                ) : (
-                  <View style={[styles.rowThumb, styles.rowThumbPlaceholderHouse]}>
-                    <FontAwesome name="home" size={24} color={theme.colors.secondary} />
+            houses.map((h) => {
+              const isFavorite = Boolean(h.is_favorite);
+              return (
+                <View key={h.id} style={styles.card}>
+                  {h.image_path ? (
+                    <Image
+                      source={{ uri: getImageUri(h.image_path)! }}
+                      style={styles.rowThumb}
+                    />
+                  ) : (
+                    <View style={[styles.rowThumb, styles.rowThumbPlaceholderHouse]}>
+                      <FontAwesome name="home" size={24} color={theme.colors.secondary} />
+                    </View>
+                  )}
+                  <View style={styles.rowContent}>
+                    <Text style={styles.rowText}>{h.name}</Text>
+                    {h.notes ? (
+                      <Text style={styles.rowMeta}>{h.notes}</Text>
+                    ) : null}
                   </View>
-                )}
-                <View style={styles.rowContent}>
-                  <Text style={styles.rowText}>{h.name}</Text>
-                  {h.notes ? (
-                    <Text style={styles.rowMeta}>{h.notes}</Text>
-                  ) : null}
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.favoriteBtn,
+                      pressed && styles.favoriteBtnPressed,
+                    ]}
+                    onPress={async () => {
+                      await setHouseFavorite(db, h.id, !isFavorite);
+                      loadData();
+                    }}
+                  >
+                    <FontAwesome
+                      name={isFavorite ? 'star' : 'star-o'}
+                      size={24}
+                      color={isFavorite ? theme.colors.warning : theme.colors.textMuted}
+                    />
+                  </Pressable>
                 </View>
-              </View>
-            ))
+              );
+            })
           )}
             </View>
           )}

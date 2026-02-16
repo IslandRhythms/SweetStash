@@ -64,6 +64,7 @@ function createSchema(db: Database.Database) {
       notes TEXT,
       image_path TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      is_favorite INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (profile_id) REFERENCES profiles(id)
     );
 
