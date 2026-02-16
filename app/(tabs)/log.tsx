@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,20 +26,21 @@ import {
   getFirstProfile,
   getHouses,
   getProfile,
+  setCandyFavorite,
 } from '@/lib/db';
 import { getImageUri } from '@/lib/images';
 import type { CandyLog, House } from '@/types';
 import { Image } from 'react-native';
 
-type Mode = 'view' | 'add';
-type AddTab = 'candy' | 'house';
+type Mode = 'view' | 'addCandy' | 'addHouse';
 
 export default function LogScreen() {
   const db = useSQLiteContext();
   const theme = useTheme();
   const { profile, loadStoredProfile } = useProfile();
   const [mode, setMode] = useState<Mode>('view');
-  const [tab, setTab] = useState<AddTab>('candy');
+  const [candyExpanded, setCandyExpanded] = useState(true);
+  const [housesExpanded, setHousesExpanded] = useState(true);
   const [ready, setReady] = useState(false);
   const [candyLogs, setCandyLogs] = useState<CandyLog[]>([]);
   const [houses, setHouses] = useState<House[]>([]);
@@ -95,70 +97,156 @@ export default function LogScreen() {
           flexDirection: 'row',
           padding: theme.spacing.md,
           gap: theme.spacing.sm,
-          backgroundColor: theme.colors.surface,
+          backgroundColor: theme.colors.background,
         },
         modeTab: {
           flex: 1,
-          flexDirection: 'row',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: theme.spacing.sm,
-          padding: theme.spacing.md,
-          borderRadius: theme.borderRadius.md,
-          backgroundColor: theme.colors.border,
+          gap: theme.spacing.xs,
+          paddingVertical: theme.spacing.md,
+          paddingHorizontal: theme.spacing.sm,
+          borderRadius: theme.borderRadius.lg,
+          backgroundColor: theme.colors.surface,
+          ...Platform.select({
+            ios: {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+          }),
         },
-        modeTabActive: { backgroundColor: theme.colors.primary },
-        modeTabText: { fontSize: theme.fontSize.md, color: theme.colors.textMuted },
-        modeTabTextActive: { color: '#fff', fontWeight: '600' },
-        addTabs: {
-          flexDirection: 'row',
-          padding: theme.spacing.sm,
-          gap: theme.spacing.sm,
-          backgroundColor: theme.colors.background,
+        modeTabActive: {
+          backgroundColor: theme.colors.primary,
+          ...Platform.select({
+            ios: {
+              shadowOpacity: 0.15,
+              shadowRadius: 6,
+            },
+            android: { elevation: 4 },
+          }),
         },
-        addTab: {
-          flex: 1,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: theme.spacing.sm,
-          padding: theme.spacing.sm,
-          borderRadius: theme.borderRadius.md,
-          backgroundColor: theme.colors.border,
-        },
-        addTabActive: { backgroundColor: theme.colors.primary },
-        addTabText: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
-        addTabTextActive: { color: '#fff', fontWeight: '600' },
+        modeTabText: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted, fontWeight: '500' },
+        modeTabTextActive: { color: '#fff', fontWeight: '700' },
         scroll: { flex: 1 },
         scrollContent: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl * 2 },
-        sectionTitle: {
-          fontSize: theme.fontSize.lg,
-          fontWeight: '600',
-          color: theme.colors.text,
+        sectionHeader: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.sm,
           marginBottom: theme.spacing.md,
         },
+        sectionHeaderPressable: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flex: 1,
+        },
+        sectionHeaderLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.sm,
+          flex: 1,
+        },
+        chevron: { marginLeft: theme.spacing.sm },
+        sectionTitle: {
+          fontSize: theme.fontSize.xl,
+          fontWeight: '700',
+          color: theme.colors.text,
+        },
+        sectionSubtitle: {
+          fontSize: theme.fontSize.sm,
+          color: theme.colors.textMuted,
+          marginTop: 2,
+        },
+        emptyCard: {
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: theme.spacing.xl * 1.5,
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.borderRadius.lg,
+          marginBottom: theme.spacing.lg,
+          ...Platform.select({
+            ios: {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.06,
+              shadowRadius: 3,
+            },
+            android: { elevation: 1 },
+          }),
+        },
+        emptyIcon: { marginBottom: theme.spacing.md, opacity: 0.5 },
         empty: {
           fontSize: theme.fontSize.md,
           color: theme.colors.textMuted,
           textAlign: 'center',
-          marginBottom: theme.spacing.lg,
+          lineHeight: 22,
         },
-        row: {
+        card: {
           flexDirection: 'row',
           alignItems: 'center',
           backgroundColor: theme.colors.surface,
           padding: theme.spacing.md,
-          borderRadius: theme.borderRadius.md,
-          marginBottom: theme.spacing.sm,
+          borderRadius: theme.borderRadius.lg,
+          marginBottom: theme.spacing.md,
+          ...Platform.select({
+            ios: {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+          }),
         },
+        cardPressed: { opacity: 0.95 },
         rowThumb: {
-          width: 40,
-          height: 40,
-          borderRadius: theme.borderRadius.sm,
+          width: 56,
+          height: 56,
+          borderRadius: theme.borderRadius.md,
           marginRight: theme.spacing.md,
         },
-        rowText: { flex: 1, fontSize: theme.fontSize.md, color: theme.colors.text },
-        rowMeta: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
+        rowThumbPlaceholder: {
+          backgroundColor: `${theme.colors.primary}18`,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        rowThumbPlaceholderHouse: {
+          backgroundColor: `${theme.colors.secondary}18`,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        rowContent: { flex: 1, minWidth: 0 },
+        rowText: { fontSize: theme.fontSize.lg, fontWeight: '600', color: theme.colors.text },
+        rowMeta: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted, marginTop: 2 },
+        qtyBadge: {
+          backgroundColor: theme.colors.primary,
+          paddingHorizontal: theme.spacing.sm,
+          paddingVertical: 2,
+          borderRadius: theme.borderRadius.sm,
+        },
+        qtyBadgeText: { fontSize: theme.fontSize.sm, fontWeight: '700', color: '#fff' },
+        favoriteBtn: { padding: theme.spacing.sm },
+        favoriteBtnPressed: { opacity: 0.7 },
+        formCard: {
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+          marginBottom: theme.spacing.lg,
+          ...Platform.select({
+            ios: {
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.08,
+              shadowRadius: 4,
+            },
+            android: { elevation: 2 },
+          }),
+        },
         label: {
           fontSize: theme.fontSize.md,
           fontWeight: '600',
@@ -166,31 +254,43 @@ export default function LogScreen() {
           marginBottom: theme.spacing.xs,
         },
         input: {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: theme.colors.background,
           padding: theme.spacing.lg,
           borderRadius: theme.borderRadius.md,
           fontSize: theme.fontSize.md,
           color: theme.colors.text,
           marginBottom: theme.spacing.md,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
         },
-        textArea: { minHeight: 80, textAlignVertical: 'top' as const },
+        textArea: { minHeight: 96, textAlignVertical: 'top' as const },
         checkRow: {
           flexDirection: 'row',
           alignItems: 'center',
           gap: theme.spacing.sm,
           marginBottom: theme.spacing.lg,
         },
-        checkLabel: { fontSize: theme.fontSize.md, color: theme.colors.text },
+        checkLabel: { fontSize: theme.fontSize.md, color: theme.colors.text, flex: 1 },
         submitBtn: {
           backgroundColor: theme.colors.primary,
           padding: theme.spacing.lg,
           borderRadius: theme.borderRadius.lg,
           alignItems: 'center',
+          ...Platform.select({
+            ios: {
+              shadowColor: theme.colors.primary,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.3,
+              shadowRadius: 4,
+            },
+            android: { elevation: 3 },
+          }),
         },
+        submitBtnHouse: { backgroundColor: theme.colors.secondary },
         submitBtnDisabled: { opacity: 0.6 },
         submitBtnText: {
           fontSize: theme.fontSize.lg,
-          fontWeight: '600',
+          fontWeight: '700',
           color: '#fff',
         },
       }),
@@ -275,123 +375,210 @@ export default function LogScreen() {
     <View style={styles.container}>
       <View style={styles.modeTabs}>
         <Pressable
-          style={[styles.modeTab, mode === 'view' && styles.modeTabActive]}
+          style={({ pressed }) => [
+            styles.modeTab,
+            mode === 'view' && styles.modeTabActive,
+            pressed && { opacity: 0.9 },
+          ]}
           onPress={() => setMode('view')}
         >
           <FontAwesome
-            name="list"
-            size={20}
-            color={mode === 'view' ? '#fff' : theme.colors.textMuted}
+            name="list-ul"
+            size={24}
+            color={mode === 'view' ? '#fff' : theme.colors.primary}
           />
           <Text style={[styles.modeTabText, mode === 'view' && styles.modeTabTextActive]}>
             See my stash
           </Text>
         </Pressable>
         <Pressable
-          style={[styles.modeTab, mode === 'add' && styles.modeTabActive]}
-          onPress={() => setMode('add')}
+          style={({ pressed }) => [
+            styles.modeTab,
+            mode === 'addCandy' && styles.modeTabActive,
+            pressed && { opacity: 0.9 },
+          ]}
+          onPress={() => setMode('addCandy')}
         >
           <FontAwesome
-            name="plus-circle"
-            size={20}
-            color={mode === 'add' ? '#fff' : theme.colors.textMuted}
+            name="gift"
+            size={24}
+            color={mode === 'addCandy' ? '#fff' : theme.colors.primary}
           />
-          <Text style={[styles.modeTabText, mode === 'add' && styles.modeTabTextActive]}>
-            Add treats
+          <Text style={[styles.modeTabText, mode === 'addCandy' && styles.modeTabTextActive]}>
+            Add candy
+          </Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [
+            styles.modeTab,
+            mode === 'addHouse' && styles.modeTabActive,
+            pressed && { opacity: 0.9 },
+          ]}
+          onPress={() => setMode('addHouse')}
+        >
+          <FontAwesome
+            name="home"
+            size={24}
+            color={mode === 'addHouse' ? '#fff' : theme.colors.secondary}
+          />
+          <Text style={[styles.modeTabText, mode === 'addHouse' && styles.modeTabTextActive]}>
+            Add house
           </Text>
         </Pressable>
       </View>
 
       {mode === 'view' ? (
-        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.sectionTitle}>My candy</Text>
-          {candyLogs.length === 0 ? (
-            <Text style={styles.empty}>No candy logged yet. Tap &quot;Add treats&quot; to add some!</Text>
-          ) : (
-            candyLogs.slice(0, 30).map((c) => (
-              <View key={c.id} style={styles.row}>
-                {c.image_path && (
-                  <Image
-                    source={{ uri: getImageUri(c.image_path)! }}
-                    style={styles.rowThumb}
-                  />
-                )}
-                <Text style={styles.rowText}>
-                  {c.candy_name} × {c.quantity}
-                </Text>
-                <Text style={styles.rowMeta}>
-                  {new Date(c.created_at).toLocaleDateString()}
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.sectionHeader,
+              { backgroundColor: theme.colors.surface, padding: theme.spacing.md, borderRadius: theme.borderRadius.lg, marginBottom: 0 },
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={() => setCandyExpanded((e) => !e)}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <FontAwesome name="gift" size={28} color={theme.colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionTitle}>My candy</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {candyLogs.length} {candyLogs.length === 1 ? 'piece' : 'pieces'} logged
                 </Text>
               </View>
-            ))
+            </View>
+            <FontAwesome
+              name={candyExpanded ? 'chevron-down' : 'chevron-up'}
+              size={20}
+              color={theme.colors.textMuted}
+              style={styles.chevron}
+            />
+          </Pressable>
+          {candyExpanded && (
+            <View style={{ marginTop: theme.spacing.md, marginBottom: theme.spacing.lg }}>
+          {candyLogs.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <FontAwesome name="gift" size={48} color={theme.colors.primary} style={styles.emptyIcon} />
+              <Text style={styles.empty}>No candy logged yet.{'\n'}Tap &quot;Add candy&quot; to add some!</Text>
+            </View>
+          ) : (
+            <>
+              {candyLogs.slice(0, 30).map((c) => {
+                const isFavorite = Boolean(c.is_favorite);
+                return (
+                  <View key={c.id} style={styles.card}>
+                    {c.image_path ? (
+                      <Image
+                        source={{ uri: getImageUri(c.image_path)! }}
+                        style={styles.rowThumb}
+                      />
+                    ) : (
+                      <View style={[styles.rowThumb, styles.rowThumbPlaceholder]}>
+                        <FontAwesome name="gift" size={24} color={theme.colors.primary} />
+                      </View>
+                    )}
+                    <View style={styles.rowContent}>
+                      <Text style={styles.rowText}>{c.candy_name}</Text>
+                      <Text style={styles.rowMeta}>
+                        {new Date(c.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.favoriteBtn,
+                        pressed && styles.favoriteBtnPressed,
+                      ]}
+                      onPress={async () => {
+                        await setCandyFavorite(db, c.id, !isFavorite);
+                        loadData();
+                      }}
+                    >
+                      <FontAwesome
+                        name={isFavorite ? 'star' : 'star-o'}
+                        size={24}
+                        color={isFavorite ? theme.colors.warning : theme.colors.textMuted}
+                      />
+                    </Pressable>
+                    <View style={styles.qtyBadge}>
+                      <Text style={styles.qtyBadgeText}>×{c.quantity}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+              {candyLogs.length > 30 && (
+                <Text style={[styles.rowMeta, { marginBottom: theme.spacing.md }]}>
+                  +{candyLogs.length - 30} more
+                </Text>
+              )}
+            </>
           )}
-          {candyLogs.length > 30 && (
-            <Text style={styles.rowMeta}>+{candyLogs.length - 30} more</Text>
+            </View>
           )}
 
-          <Text style={[styles.sectionTitle, { marginTop: theme.spacing.lg }]}>
-            My houses
-          </Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.sectionHeader,
+              { backgroundColor: theme.colors.surface, padding: theme.spacing.md, borderRadius: theme.borderRadius.lg, marginTop: theme.spacing.xl, marginBottom: 0 },
+              pressed && { opacity: 0.8 },
+            ]}
+            onPress={() => setHousesExpanded((e) => !e)}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <FontAwesome name="home" size={28} color={theme.colors.secondary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sectionTitle}>My houses</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {houses.length} {houses.length === 1 ? 'house' : 'houses'} visited
+                </Text>
+              </View>
+            </View>
+            <FontAwesome
+              name={housesExpanded ? 'chevron-down' : 'chevron-up'}
+              size={20}
+              color={theme.colors.textMuted}
+              style={styles.chevron}
+            />
+          </Pressable>
+          {housesExpanded && (
+            <View style={{ marginTop: theme.spacing.md }}>
           {houses.length === 0 ? (
-            <Text style={styles.empty}>No houses yet. Tap &quot;Add treats&quot; to add some!</Text>
+            <View style={styles.emptyCard}>
+              <FontAwesome name="home" size={48} color={theme.colors.secondary} style={styles.emptyIcon} />
+              <Text style={styles.empty}>No houses yet.{'\n'}Tap &quot;Add house&quot; to add some!</Text>
+            </View>
           ) : (
             houses.map((h) => (
-              <View key={h.id} style={styles.row}>
+              <View key={h.id} style={styles.card}>
                 {h.image_path ? (
                   <Image
                     source={{ uri: getImageUri(h.image_path)! }}
                     style={styles.rowThumb}
                   />
                 ) : (
-                  <View style={[styles.rowThumb, { backgroundColor: theme.colors.border, justifyContent: 'center', alignItems: 'center' }]}>
-                    <FontAwesome name="home" size={20} color={theme.colors.textMuted} />
+                  <View style={[styles.rowThumb, styles.rowThumbPlaceholderHouse]}>
+                    <FontAwesome name="home" size={24} color={theme.colors.secondary} />
                   </View>
                 )}
-                <View style={{ flex: 1 }}>
+                <View style={styles.rowContent}>
                   <Text style={styles.rowText}>{h.name}</Text>
                   {h.notes ? (
-                    <Text style={[styles.rowMeta, { marginTop: 2 }]}>{h.notes}</Text>
+                    <Text style={styles.rowMeta}>{h.notes}</Text>
                   ) : null}
                 </View>
               </View>
             ))
           )}
+            </View>
+          )}
           <View style={{ height: theme.spacing.xl * 2 }} />
         </ScrollView>
       ) : (
-        <>
-          <View style={styles.addTabs}>
-            <Pressable
-              style={[styles.addTab, tab === 'candy' && styles.addTabActive]}
-              onPress={() => setTab('candy')}
-            >
-              <FontAwesome
-                name="gift"
-                size={18}
-                color={tab === 'candy' ? '#fff' : theme.colors.textMuted}
-              />
-              <Text style={[styles.addTabText, tab === 'candy' && styles.addTabTextActive]}>
-                Candy
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.addTab, tab === 'house' && styles.addTabActive]}
-              onPress={() => setTab('house')}
-            >
-              <FontAwesome
-                name="home"
-                size={18}
-                color={tab === 'house' ? '#fff' : theme.colors.textMuted}
-              />
-              <Text style={[styles.addTabText, tab === 'house' && styles.addTabTextActive]}>
-                House
-              </Text>
-            </Pressable>
-          </View>
-
-          <DismissKeyboardScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-            {tab === 'candy' ? (
-              <>
+          <DismissKeyboardScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {mode === 'addCandy' ? (
+              <View style={styles.formCard}>
+                <View style={[styles.sectionHeader, { marginBottom: theme.spacing.lg }]}>
+                  <FontAwesome name="gift" size={28} color={theme.colors.primary} />
+                  <Text style={styles.sectionTitle}>Add candy</Text>
+                </View>
                 <Text style={styles.label}>Candy name</Text>
                 <TextInput
                   style={styles.input}
@@ -440,9 +627,13 @@ export default function LogScreen() {
                     {submittingCandy ? 'Adding...' : 'Add candy'}
                   </Text>
                 </Pressable>
-              </>
+              </View>
             ) : (
-              <>
+              <View style={styles.formCard}>
+                <View style={[styles.sectionHeader, { marginBottom: theme.spacing.lg }]}>
+                  <FontAwesome name="home" size={28} color={theme.colors.secondary} />
+                  <Text style={styles.sectionTitle}>Add house</Text>
+                </View>
                 <Text style={styles.label}>House name or address</Text>
                 <TextInput
                   style={styles.input}
@@ -469,6 +660,7 @@ export default function LogScreen() {
                 <Pressable
                   style={[
                     styles.submitBtn,
+                    styles.submitBtnHouse,
                     submittingHouse && styles.submitBtnDisabled,
                   ]}
                   onPress={submitHouse}
@@ -478,10 +670,9 @@ export default function LogScreen() {
                     {submittingHouse ? 'Adding...' : 'Add house'}
                   </Text>
                 </Pressable>
-              </>
+              </View>
             )}
           </DismissKeyboardScrollView>
-        </>
       )}
     </View>
   );

@@ -55,4 +55,5 @@ export interface CandyLog {
   quantity: number;
   image_path: string | null;
   created_at: string;
+  is_favorite?: 0 | 1;
 }

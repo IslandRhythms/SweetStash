@@ -10,7 +10,7 @@ import type {
 } from '@/types';
 
 const DATABASE_NAME = 'sweetstash.db';
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 3;
 
 export async function migrateDb(db: SQLite.SQLiteDatabase) {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
@@ -106,6 +106,18 @@ export async function migrateDb(db: SQLite.SQLiteDatabase) {
       WHERE NOT EXISTS (SELECT 1 FROM profiles);
     `);
     await db.execAsync(`PRAGMA user_version = 2`);
+  }
+
+  if (currentVersion < 3) {
+    const cols = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(candy_logs)'
+    );
+    if (!cols.some((c) => c.name === 'is_favorite')) {
+      await db.execAsync(`
+        ALTER TABLE candy_logs ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;
+      `);
+    }
+    await db.execAsync(`PRAGMA user_version = 3`);
   }
 }
 
@@ -389,7 +401,7 @@ export async function getCandyLogs(
     );
   }
   return db.getAllAsync<CandyLog>(
-    'SELECT * FROM candy_logs WHERE profile_id = ? ORDER BY created_at DESC',
+    'SELECT * FROM candy_logs WHERE profile_id = ? ORDER BY is_favorite DESC, created_at DESC',
     profileId
   );
 }
@@ -415,7 +427,7 @@ export async function createCandyLog(
 export async function updateCandyLog(
   db: SQLite.SQLiteDatabase,
   id: number,
-  data: Partial<Pick<CandyLog, 'candy_name' | 'quantity' | 'image_path'>>
+  data: Partial<Pick<CandyLog, 'candy_name' | 'quantity' | 'image_path' | 'is_favorite'>>
 ): Promise<void> {
   if (data.candy_name !== undefined)
     await db.runAsync('UPDATE candy_logs SET candy_name = ? WHERE id = ?', data.candy_name, id);
@@ -423,6 +435,20 @@ export async function updateCandyLog(
     await db.runAsync('UPDATE candy_logs SET quantity = ? WHERE id = ?', data.quantity, id);
   if (data.image_path !== undefined)
     await db.runAsync('UPDATE candy_logs SET image_path = ? WHERE id = ?', data.image_path, id);
+  if (data.is_favorite !== undefined)
+    await db.runAsync('UPDATE candy_logs SET is_favorite = ? WHERE id = ?', data.is_favorite, id);
+}
+
+export async function setCandyFavorite(
+  db: SQLite.SQLiteDatabase,
+  id: number,
+  isFavorite: boolean
+): Promise<void> {
+  await db.runAsync(
+    'UPDATE candy_logs SET is_favorite = ? WHERE id = ?',
+    isFavorite ? 1 : 0,
+    id
+  );
 }
 
 export async function getCandyLog(
