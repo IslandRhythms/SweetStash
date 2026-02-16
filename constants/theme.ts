@@ -1,17 +1,4 @@
-export const theme = {
-  colors: {
-    primary: '#FF6B00',
-    primaryDark: '#E85D04',
-    secondary: '#7B2CBF',
-    secondaryDark: '#5A189A',
-    background: '#FFF8F0',
-    surface: '#FFFFFF',
-    text: '#1A1A1A',
-    textMuted: '#6B6B6B',
-    border: '#E8E0D8',
-    success: '#2D8A4E',
-    warning: '#E8A317',
-  },
+const shared = {
   spacing: {
     xs: 4,
     sm: 8,
@@ -34,3 +21,50 @@ export const theme = {
   },
   minTouchTarget: 44,
 } as const;
+
+export const lightTheme = {
+  ...shared,
+  dark: false as const,
+  colors: {
+    headerBackground: '#FF6B00',
+    primary: '#FF6B00',
+    primaryDark: '#E85D04',
+    secondary: '#7B2CBF',
+    secondaryDark: '#5A189A',
+    background: '#FFF8F0',
+    surface: '#FFFFFF',
+    text: '#1A1A1A',
+    textMuted: '#6B6B6B',
+    border: '#E8E0D8',
+    success: '#2D8A4E',
+    warning: '#E8A317',
+  },
+} as const;
+
+export const darkTheme = {
+  ...shared,
+  dark: true as const,
+  colors: {
+    headerBackground: '#9B4DDF',
+    primary: '#FF8533',
+    primaryDark: '#FF6B00',
+    secondary: '#9B4DDF',
+    secondaryDark: '#7B2CBF',
+    background: '#1A1A1A',
+    surface: '#2D2D2D',
+    text: '#F5F5F5',
+    textMuted: '#A0A0A0',
+    border: '#404040',
+    success: '#3DA85E',
+    warning: '#F5B82E',
+  },
+} as const;
+
+export type Theme = typeof lightTheme | typeof darkTheme;
+
+export function getTheme(colorScheme: 'light' | 'dark' | null | undefined): Theme {
+  return colorScheme === 'dark' ? darkTheme : lightTheme;
+}
+
+/** @deprecated Use getTheme(useColorScheme()) or useTheme() instead. Kept for gradual migration. */
+export const theme = lightTheme;

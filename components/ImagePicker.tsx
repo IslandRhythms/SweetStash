@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -8,7 +8,7 @@ import {
   View,
 } from 'react-native';
 
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { getImageUri, saveImageFromUri, updateImage } from '@/lib/images';
 
 interface ImagePickerProps {
@@ -18,6 +18,7 @@ interface ImagePickerProps {
 }
 
 export function ImagePickerButton({ value, onChange, onEdit }: ImagePickerProps) {
+  const theme = useTheme();
   const [picking, setPicking] = useState(false);
 
   async function pickImage() {
@@ -54,6 +55,52 @@ export function ImagePickerButton({ value, onChange, onEdit }: ImagePickerProps)
 
   const displayUri = value ? getImageUri(value) : null;
 
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { marginVertical: theme.spacing.sm },
+        placeholder: {
+          height: 120,
+          backgroundColor: theme.colors.border,
+          borderRadius: theme.borderRadius.md,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderWidth: 2,
+          borderStyle: 'dashed',
+          borderColor: theme.colors.textMuted,
+        },
+        placeholderPressed: { opacity: 0.8 },
+        placeholderText: { fontSize: theme.fontSize.md, color: theme.colors.textMuted },
+        previewWrap: {
+          position: 'relative',
+          borderRadius: theme.borderRadius.md,
+          overflow: 'hidden',
+        },
+        preview: { width: '100%', height: 180, resizeMode: 'cover' as const },
+        overlay: {
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          flexDirection: 'row',
+          gap: theme.spacing.sm,
+          padding: theme.spacing.sm,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        },
+        btn: {
+          flex: 1,
+          padding: theme.spacing.sm,
+          backgroundColor: theme.colors.primary,
+          borderRadius: theme.borderRadius.sm,
+          alignItems: 'center',
+        },
+        btnRemove: { backgroundColor: theme.colors.textMuted },
+        btnPressed: { opacity: 0.8 },
+        btnText: { color: '#fff', fontSize: theme.fontSize.sm },
+      }),
+    [theme]
+  );
+
   return (
     <View style={styles.container}>
       {displayUri ? (
@@ -88,63 +135,3 @@ export function ImagePickerButton({ value, onChange, onEdit }: ImagePickerProps)
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: theme.spacing.sm,
-  },
-  placeholder: {
-    height: 120,
-    backgroundColor: theme.colors.border,
-    borderRadius: theme.borderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    borderColor: theme.colors.textMuted,
-  },
-  placeholderPressed: {
-    opacity: 0.8,
-  },
-  placeholderText: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.textMuted,
-  },
-  previewWrap: {
-    position: 'relative',
-    borderRadius: theme.borderRadius.md,
-    overflow: 'hidden',
-  },
-  preview: {
-    width: '100%',
-    height: 180,
-    resizeMode: 'cover',
-  },
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    padding: theme.spacing.sm,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  btn: {
-    flex: 1,
-    padding: theme.spacing.sm,
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.sm,
-    alignItems: 'center',
-  },
-  btnRemove: {
-    backgroundColor: theme.colors.textMuted,
-  },
-  btnPressed: {
-    opacity: 0.8,
-  },
-  btnText: {
-    color: '#fff',
-    fontSize: theme.fontSize.sm,
-  },
-});

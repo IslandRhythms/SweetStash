@@ -1,5 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { ThemeProvider } from '@react-navigation/native';
+import { ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { SQLiteProvider } from 'expo-sqlite';
 import { Stack } from 'expo-router';
@@ -8,26 +8,56 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { ProfileProvider } from '@/contexts/ProfileContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { migrateDb } from '@/lib/db';
-import { theme } from '@/constants/theme';
 
-const SweetStashTheme = {
-  dark: false,
-  colors: {
-    primary: theme.colors.primary,
-    background: theme.colors.background,
-    card: theme.colors.surface,
-    text: theme.colors.text,
-    border: theme.colors.border,
-    notification: theme.colors.secondary,
-  },
-  fonts: {
-    regular: { fontFamily: 'System', fontWeight: '400' as const },
-    medium: { fontFamily: 'System', fontWeight: '500' as const },
-    bold: { fontFamily: 'System', fontWeight: '700' as const },
-    heavy: { fontFamily: 'System', fontWeight: '900' as const },
-  },
-};
+function AppStack() {
+  const theme = useTheme();
+  return (
+    <Stack>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="session/summary/[id]"
+        options={{
+          title: 'Session summary',
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: theme.colors.headerBackground },
+          headerTintColor: '#fff',
+        }}
+      />
+    </Stack>
+  );
+}
+
+function NavThemeBridge({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+  const navTheme = {
+    dark: theme.dark,
+    colors: {
+      primary: theme.colors.primary,
+      background: theme.colors.background,
+      card: theme.colors.surface,
+      text: theme.colors.text,
+      border: theme.colors.border,
+      notification: theme.colors.secondary,
+    },
+    fonts: {
+      regular: { fontFamily: 'System', fontWeight: '400' as const },
+      medium: { fontFamily: 'System', fontWeight: '500' as const },
+      bold: { fontFamily: 'System', fontWeight: '700' as const },
+      heavy: { fontFamily: 'System', fontWeight: '900' as const },
+    },
+  };
+  return <NavThemeProvider value={navTheme}>{children}</NavThemeProvider>;
+}
+
+function StackWrapper() {
+  return (
+    <NavThemeBridge>
+      <AppStack />
+    </NavThemeBridge>
+  );
+}
 
 export {
   ErrorBoundary,
@@ -65,20 +95,9 @@ export default function RootLayout() {
       onInit={migrateDb}
       onError={(e) => console.error('SQLite error:', e)}
     >
-      <ThemeProvider value={SweetStashTheme}>
+      <ThemeProvider>
         <ProfileProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="session/summary/[id]"
-              options={{
-                title: 'Session summary',
-                headerBackTitle: 'Back',
-                headerStyle: { backgroundColor: theme.colors.primary },
-                headerTintColor: '#fff',
-              }}
-            />
-          </Stack>
+          <StackWrapper />
         </ProfileProvider>
       </ThemeProvider>
     </SQLiteProvider>

@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -15,7 +15,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useProfile } from '@/contexts/ProfileContext';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
 import { ImagePickerButton } from '@/components/ImagePicker';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   addHouseVisit,
   createCandyLog,
@@ -30,6 +30,7 @@ type Tab = 'candy' | 'house';
 export default function LogScreen() {
   const db = useSQLiteContext();
   const router = useRouter();
+  const theme = useTheme();
   const { profile, loadStoredProfile } = useProfile();
   const [tab, setTab] = useState<Tab>('candy');
   const [ready, setReady] = useState(false);
@@ -62,6 +63,70 @@ export default function LogScreen() {
       );
     }
   }, [profile, db]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: theme.colors.background },
+        center: { justifyContent: 'center', alignItems: 'center' },
+        tabs: {
+          flexDirection: 'row',
+          padding: theme.spacing.md,
+          gap: theme.spacing.sm,
+          backgroundColor: theme.colors.surface,
+        },
+        tab: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: theme.spacing.sm,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          backgroundColor: theme.colors.border,
+        },
+        tabActive: { backgroundColor: theme.colors.primary },
+        tabText: { fontSize: theme.fontSize.md, color: theme.colors.textMuted },
+        tabTextActive: { color: '#fff', fontWeight: '600' },
+        scroll: { flex: 1 },
+        scrollContent: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl * 2 },
+        label: {
+          fontSize: theme.fontSize.md,
+          fontWeight: '600',
+          color: theme.colors.text,
+          marginBottom: theme.spacing.xs,
+        },
+        input: {
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.md,
+          fontSize: theme.fontSize.md,
+          color: theme.colors.text,
+          marginBottom: theme.spacing.md,
+        },
+        textArea: { minHeight: 80, textAlignVertical: 'top' as const },
+        checkRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.sm,
+          marginBottom: theme.spacing.lg,
+        },
+        checkLabel: { fontSize: theme.fontSize.md, color: theme.colors.text },
+        submitBtn: {
+          backgroundColor: theme.colors.primary,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+          alignItems: 'center',
+        },
+        submitBtnDisabled: { opacity: 0.6 },
+        submitBtnText: {
+          fontSize: theme.fontSize.lg,
+          fontWeight: '600',
+          color: '#fff',
+        },
+      }),
+    [theme]
+  );
 
   if (!ready || !profile) {
     return (
@@ -261,90 +326,3 @@ export default function LogScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabs: {
-    flexDirection: 'row',
-    padding: theme.spacing.md,
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.surface,
-  },
-  tab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.border,
-  },
-  tabActive: {
-    backgroundColor: theme.colors.primary,
-  },
-  tabText: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.textMuted,
-  },
-  tabTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl * 2,
-  },
-  label: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-  },
-  input: {
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    fontSize: theme.fontSize.md,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  checkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.lg,
-  },
-  checkLabel: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.text,
-  },
-  submitBtn: {
-    backgroundColor: theme.colors.primary,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    alignItems: 'center',
-  },
-  submitBtnDisabled: {
-    opacity: 0.6,
-  },
-  submitBtnText: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: '600',
-    color: '#fff',
-  },
-});

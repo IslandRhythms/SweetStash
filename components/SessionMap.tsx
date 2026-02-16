@@ -1,9 +1,9 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import MapView, { Polyline, UrlTile } from 'react-native-maps';
 
+import { useTheme } from '@/contexts/ThemeContext';
 import { MAPTILER_API_KEY } from '@/lib/constants';
-import { theme } from '@/constants/theme';
 
 interface SessionMapProps {
   coordinates: { latitude: number; longitude: number }[];
@@ -22,6 +22,7 @@ export function SessionMap({
   showCurrentLocation = false,
   style,
 }: SessionMapProps) {
+  const theme = useTheme();
   const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
@@ -47,6 +48,24 @@ export function SessionMap({
         latitudeDelta: 0.0922,
         longitudeDelta: 0.0421,
       };
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          overflow: 'hidden',
+          borderRadius: theme.borderRadius.md,
+        },
+        map: { width: '100%', height: '100%', minHeight: 200 },
+        webPlaceholder: {
+          backgroundColor: theme.colors.border,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        webPlaceholderText: { color: theme.colors.textMuted },
+      }),
+    [theme]
+  );
 
   if (Platform.OS === 'web') {
     return (
@@ -86,23 +105,3 @@ export function SessionMap({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    overflow: 'hidden',
-    borderRadius: theme.borderRadius.md,
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-    minHeight: 200,
-  },
-  webPlaceholder: {
-    backgroundColor: theme.colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  webPlaceholderText: {
-    color: theme.colors.textMuted,
-  },
-});

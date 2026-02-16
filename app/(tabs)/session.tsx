@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,7 +16,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
 import { SessionMap } from '@/components/SessionMap';
 import { useProfile } from '@/contexts/ProfileContext';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   addHouseVisit,
   addLocationPoint,
@@ -37,6 +37,7 @@ import * as Location from 'expo-location';
 export default function SessionScreen() {
   const db = useSQLiteContext();
   const router = useRouter();
+  const theme = useTheme();
   const { profile, loadStoredProfile } = useProfile();
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
@@ -176,6 +177,129 @@ export default function SessionScreen() {
       ]
     );
   }
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: theme.colors.background },
+        scrollContent: { padding: theme.spacing.lg, paddingBottom: theme.spacing.xl * 2 },
+        center: { justifyContent: 'center', alignItems: 'center' },
+        title: {
+          fontSize: theme.fontSize.xxl,
+          fontWeight: 'bold',
+          color: theme.colors.text,
+          marginTop: theme.spacing.lg,
+        },
+        subtitle: {
+          fontSize: theme.fontSize.lg,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.xl,
+        },
+        label: {
+          fontSize: theme.fontSize.md,
+          fontWeight: '600',
+          color: theme.colors.text,
+          marginBottom: theme.spacing.sm,
+        },
+        costumeList: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          gap: theme.spacing.sm,
+          marginBottom: theme.spacing.xl,
+        },
+        costumeChip: {
+          paddingHorizontal: theme.spacing.lg,
+          paddingVertical: theme.spacing.md,
+          borderRadius: theme.borderRadius.lg,
+          backgroundColor: theme.colors.border,
+        },
+        costumeChipActive: { backgroundColor: theme.colors.primary },
+        costumeChipText: { fontSize: theme.fontSize.md, color: theme.colors.text },
+        costumeChipTextActive: { color: '#fff', fontWeight: '600' },
+        startBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: theme.spacing.md,
+          backgroundColor: theme.colors.primary,
+          padding: theme.spacing.xl,
+          borderRadius: theme.borderRadius.lg,
+        },
+        startBtnDisabled: { opacity: 0.7 },
+        startBtnText: {
+          fontSize: theme.fontSize.xl,
+          fontWeight: '600',
+          color: '#fff',
+        },
+        mapWrap: {
+          height: 300,
+          marginBottom: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+          overflow: 'hidden',
+        },
+        map: { flex: 1 },
+        actions: { paddingVertical: theme.spacing.md },
+        status: {
+          fontSize: theme.fontSize.md,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.md,
+        },
+        houseVisits: { marginBottom: theme.spacing.md },
+        houseVisitsLabel: {
+          fontSize: theme.fontSize.sm,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.xs,
+        },
+        houseChips: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
+        houseChip: {
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.sm,
+          backgroundColor: theme.colors.secondary,
+          borderRadius: theme.borderRadius.md,
+        },
+        houseChipPressed: { opacity: 0.8 },
+        houseChipText: { fontSize: theme.fontSize.sm, color: '#fff' },
+        row: { flexDirection: 'row', gap: theme.spacing.md },
+        btn: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: theme.spacing.sm,
+          backgroundColor: theme.colors.primary,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+        },
+        btnPressed: { opacity: 0.9 },
+        btnText: { fontSize: theme.fontSize.md, fontWeight: '600', color: '#fff' },
+        addCostumeRow: {
+          flexDirection: 'row',
+          gap: theme.spacing.sm,
+          marginBottom: theme.spacing.xl,
+        },
+        costumeInput: {
+          flex: 1,
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          fontSize: theme.fontSize.md,
+          color: theme.colors.text,
+        },
+        addCostumeBtn: {
+          paddingHorizontal: theme.spacing.lg,
+          justifyContent: 'center',
+          backgroundColor: theme.colors.secondary,
+          borderRadius: theme.borderRadius.md,
+        },
+        addCostumeBtnDisabled: { opacity: 0.5 },
+        addCostumeBtnText: {
+          fontSize: theme.fontSize.md,
+          fontWeight: '600',
+          color: '#fff',
+        },
+      }),
+    [theme]
+  );
 
   if (!ready || !profile) {
     return (
@@ -348,167 +472,3 @@ export default function SessionScreen() {
     </DismissKeyboardScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  scrollContent: {
-    padding: theme.spacing.lg,
-    paddingBottom: theme.spacing.xl * 2,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: theme.fontSize.xxl,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginTop: theme.spacing.lg,
-  },
-  subtitle: {
-    fontSize: theme.fontSize.lg,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.xl,
-  },
-  label: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-  },
-  costumeList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.xl,
-  },
-  costumeChip: {
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
-    backgroundColor: theme.colors.border,
-  },
-  costumeChipActive: {
-    backgroundColor: theme.colors.primary,
-  },
-  costumeChipText: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.text,
-  },
-  costumeChipTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  startBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.md,
-    backgroundColor: theme.colors.primary,
-    padding: theme.spacing.xl,
-    borderRadius: theme.borderRadius.lg,
-  },
-  startBtnDisabled: {
-    opacity: 0.7,
-  },
-  startBtnText: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  mapWrap: {
-    height: 300,
-    marginBottom: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-  },
-  map: {
-    flex: 1,
-  },
-  actions: {
-    paddingVertical: theme.spacing.md,
-  },
-  status: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.md,
-  },
-  houseVisits: {
-    marginBottom: theme.spacing.md,
-  },
-  houseVisitsLabel: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.xs,
-  },
-  houseChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-  },
-  houseChip: {
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.secondary,
-    borderRadius: theme.borderRadius.md,
-  },
-  houseChipPressed: {
-    opacity: 0.8,
-  },
-  houseChipText: {
-    fontSize: theme.fontSize.sm,
-    color: '#fff',
-  },
-  row: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  btn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.primary,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-  },
-  btnPressed: {
-    opacity: 0.9,
-  },
-  btnText: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  addCostumeRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-    marginBottom: theme.spacing.xl,
-  },
-  costumeInput: {
-    flex: 1,
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    fontSize: theme.fontSize.md,
-    color: theme.colors.text,
-  },
-  addCostumeBtn: {
-    paddingHorizontal: theme.spacing.lg,
-    justifyContent: 'center',
-    backgroundColor: theme.colors.secondary,
-    borderRadius: theme.borderRadius.md,
-  },
-  addCostumeBtnDisabled: {
-    opacity: 0.5,
-  },
-  addCostumeBtnText: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: '#fff',
-  },
-});

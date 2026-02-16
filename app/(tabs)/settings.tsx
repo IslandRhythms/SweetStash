@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -13,12 +13,13 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useSQLiteContext } from 'expo-sqlite';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
 import { useProfile } from '@/contexts/ProfileContext';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import { createProfile, getProfile, getProfiles } from '@/lib/db';
 import type { Profile } from '@/types';
 
 export default function SettingsScreen() {
   const db = useSQLiteContext();
+  const theme = useTheme();
   const { profile, setProfile } = useProfile();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +61,110 @@ export default function SettingsScreen() {
       setAdding(false);
     }
   }
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: theme.colors.background },
+        content: { padding: theme.spacing.lg },
+        center: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: theme.colors.background,
+        },
+        sectionTitle: {
+          fontSize: theme.fontSize.xl,
+          fontWeight: 'bold',
+          color: theme.colors.text,
+          marginTop: theme.spacing.md,
+          marginBottom: theme.spacing.xs,
+        },
+        sectionSubtitle: {
+          fontSize: theme.fontSize.md,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.lg,
+        },
+        list: { gap: theme.spacing.md },
+        card: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+          minHeight: theme.minTouchTarget,
+          borderWidth: 2,
+          borderColor: 'transparent',
+        },
+        cardSelected: { borderColor: theme.colors.primary },
+        cardPressed: { opacity: 0.8 },
+        avatar: {
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: `${theme.colors.primary}20`,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: theme.spacing.md,
+        },
+        cardName: {
+          flex: 1,
+          fontSize: theme.fontSize.lg,
+          fontWeight: '600',
+          color: theme.colors.text,
+        },
+        addBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.primary,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+          gap: theme.spacing.sm,
+          marginTop: theme.spacing.lg,
+        },
+        addBtnPressed: { opacity: 0.9 },
+        addBtnText: {
+          fontSize: theme.fontSize.lg,
+          fontWeight: '600',
+          color: '#fff',
+        },
+        addForm: { marginTop: theme.spacing.md },
+        input: {
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.md,
+          fontSize: theme.fontSize.lg,
+          color: theme.colors.text,
+          marginBottom: theme.spacing.md,
+        },
+        addFormRow: { flexDirection: 'row', gap: theme.spacing.md },
+        cancelBtn: {
+          flex: 1,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.md,
+          backgroundColor: theme.colors.border,
+          alignItems: 'center',
+        },
+        saveBtn: {
+          flex: 1,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.md,
+          backgroundColor: theme.colors.primary,
+          alignItems: 'center',
+        },
+        saveBtnDisabled: { opacity: 0.5 },
+        btnPressed: { opacity: 0.8 },
+        cancelBtnText: { fontSize: theme.fontSize.md, color: theme.colors.text },
+        saveBtnText: {
+          fontSize: theme.fontSize.md,
+          fontWeight: '600',
+          color: '#fff',
+        },
+        spacer: { height: theme.spacing.xl * 2 },
+      }),
+    [theme]
+  );
 
   if (loading) {
     return (
@@ -151,130 +256,3 @@ export default function SettingsScreen() {
     </DismissKeyboardScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  content: {
-    padding: theme.spacing.lg,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background,
-  },
-  sectionTitle: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginTop: theme.spacing.md,
-    marginBottom: theme.spacing.xs,
-  },
-  sectionSubtitle: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.lg,
-  },
-  list: {
-    gap: theme.spacing.md,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    minHeight: theme.minTouchTarget,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  cardSelected: {
-    borderColor: theme.colors.primary,
-  },
-  cardPressed: {
-    opacity: 0.8,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: `${theme.colors.primary}20`,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: theme.spacing.md,
-  },
-  cardName: {
-    flex: 1,
-    fontSize: theme.fontSize.lg,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    gap: theme.spacing.sm,
-    marginTop: theme.spacing.lg,
-  },
-  addBtnPressed: {
-    opacity: 0.9,
-  },
-  addBtnText: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  addForm: {
-    marginTop: theme.spacing.md,
-  },
-  input: {
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    fontSize: theme.fontSize.lg,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-  addFormRow: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-  },
-  cancelBtn: {
-    flex: 1,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.border,
-    alignItems: 'center',
-  },
-  saveBtn: {
-    flex: 1,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.primary,
-    alignItems: 'center',
-  },
-  saveBtnDisabled: {
-    opacity: 0.5,
-  },
-  btnPressed: {
-    opacity: 0.8,
-  },
-  cancelBtnText: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.text,
-  },
-  saveBtnText: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  spacer: {
-    height: theme.spacing.xl * 2,
-  },
-});

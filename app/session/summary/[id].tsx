@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -11,7 +11,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { useSQLiteContext } from 'expo-sqlite';
 import { SessionMap } from '@/components/SessionMap';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   getCandyLogs,
   getCostume,
@@ -28,6 +28,7 @@ export default function SessionSummaryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const db = useSQLiteContext();
+  const theme = useTheme();
   const [session, setSession] = useState<Session | null>(null);
   const [points, setPoints] = useState<LocationPoint[]>([]);
   const [candy, setCandy] = useState<CandyLog[]>([]);
@@ -66,6 +67,86 @@ export default function SessionSummaryScreen() {
       setLoading(false);
     })();
   }, [id, db]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: theme.colors.background },
+        content: { padding: theme.spacing.lg },
+        center: { justifyContent: 'center', alignItems: 'center' },
+        title: {
+          fontSize: theme.fontSize.xxl,
+          fontWeight: 'bold',
+          color: theme.colors.primary,
+          textAlign: 'center',
+          marginBottom: theme.spacing.lg,
+        },
+        mapWrap: {
+          height: 220,
+          marginBottom: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+          overflow: 'hidden',
+        },
+        map: { flex: 1 },
+        stats: { flexDirection: 'row', gap: theme.spacing.lg, marginBottom: theme.spacing.lg },
+        stat: {
+          flex: 1,
+          alignItems: 'center',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+        },
+        statValue: {
+          fontSize: theme.fontSize.xxl,
+          fontWeight: 'bold',
+          color: theme.colors.text,
+        },
+        statLabel: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
+        costume: {
+          fontSize: theme.fontSize.md,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.xs,
+        },
+        meta: {
+          fontSize: theme.fontSize.sm,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.lg,
+        },
+        sectionTitle: {
+          fontSize: theme.fontSize.xl,
+          fontWeight: '600',
+          color: theme.colors.text,
+          marginBottom: theme.spacing.md,
+        },
+        candyRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          marginBottom: theme.spacing.sm,
+        },
+        candyThumb: {
+          width: 48,
+          height: 48,
+          borderRadius: theme.borderRadius.sm,
+          marginRight: theme.spacing.md,
+        },
+        candyInfo: { flex: 1 },
+        candyName: {
+          fontSize: theme.fontSize.md,
+          fontWeight: '600',
+          color: theme.colors.text,
+        },
+        candyQty: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
+        houseItem: {
+          fontSize: theme.fontSize.md,
+          color: theme.colors.text,
+          marginBottom: theme.spacing.xs,
+        },
+      }),
+    [theme]
+  );
 
   if (loading || !session) {
     return (
@@ -149,101 +230,3 @@ export default function SessionSummaryScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    padding: theme.spacing.lg,
-  },
-  title: {
-    fontSize: theme.fontSize.xxl,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.lg,
-  },
-  mapWrap: {
-    height: 220,
-    marginBottom: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    overflow: 'hidden',
-  },
-  map: {
-    flex: 1,
-  },
-  stats: {
-    flexDirection: 'row',
-    gap: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-  },
-  statValue: {
-    fontSize: theme.fontSize.xxl,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  statLabel: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-  },
-  costume: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.xs,
-  },
-  meta: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.md,
-  },
-  candyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.sm,
-  },
-  candyThumb: {
-    width: 48,
-    height: 48,
-    borderRadius: theme.borderRadius.sm,
-    marginRight: theme.spacing.md,
-  },
-  candyInfo: {
-    flex: 1,
-  },
-  candyName: {
-    fontSize: theme.fontSize.md,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  candyQty: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-  },
-  houseItem: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.xs,
-  },
-});

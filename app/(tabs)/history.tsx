@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -12,7 +12,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { useSQLiteContext } from 'expo-sqlite';
 import { useProfile } from '@/contexts/ProfileContext';
-import { theme } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   getCandyLogs,
   getFirstProfile,
@@ -25,6 +25,7 @@ import type { CandyLog, Session } from '@/types';
 export default function HistoryScreen() {
   const db = useSQLiteContext();
   const router = useRouter();
+  const theme = useTheme();
   const { profile, loadStoredProfile } = useProfile();
   const [ready, setReady] = useState(false);
   const [sessions, setSessions] = useState<(Session & { candyCount?: number; houseCount?: number })[]>([]);
@@ -55,6 +56,70 @@ export default function HistoryScreen() {
       })();
     }
   }, [profile, db]);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: { flex: 1, backgroundColor: theme.colors.background },
+        content: { padding: theme.spacing.lg },
+        center: { justifyContent: 'center', alignItems: 'center' },
+        title: {
+          fontSize: theme.fontSize.xl,
+          fontWeight: 'bold',
+          color: theme.colors.text,
+          marginBottom: theme.spacing.lg,
+        },
+        empty: {
+          fontSize: theme.fontSize.md,
+          color: theme.colors.textMuted,
+          textAlign: 'center',
+          marginTop: theme.spacing.xl,
+        },
+        card: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.lg,
+          borderRadius: theme.borderRadius.lg,
+          marginBottom: theme.spacing.md,
+          minHeight: theme.minTouchTarget,
+        },
+        cardPressed: { opacity: 0.9 },
+        cardLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+        cardInfo: { marginLeft: theme.spacing.md },
+        cardDate: {
+          fontSize: theme.fontSize.lg,
+          fontWeight: '600',
+          color: theme.colors.text,
+        },
+        cardMeta: {
+          fontSize: theme.fontSize.sm,
+          color: theme.colors.textMuted,
+          marginTop: 2,
+        },
+        sectionTitle: {
+          fontSize: theme.fontSize.lg,
+          fontWeight: '600',
+          color: theme.colors.text,
+          marginTop: theme.spacing.xl,
+          marginBottom: theme.spacing.md,
+        },
+        candyRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          marginBottom: theme.spacing.sm,
+          gap: theme.spacing.sm,
+        },
+        candyText: { flex: 1, fontSize: theme.fontSize.md, color: theme.colors.text },
+        candyDate: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
+        more: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted, marginTop: theme.spacing.xs },
+      }),
+    [theme]
+  );
 
   if (!ready || !profile) {
     return (
@@ -129,90 +194,3 @@ export default function HistoryScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    padding: theme.spacing.lg,
-  },
-  title: {
-    fontSize: theme.fontSize.xl,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-    marginBottom: theme.spacing.lg,
-  },
-  empty: {
-    fontSize: theme.fontSize.md,
-    color: theme.colors.textMuted,
-    textAlign: 'center',
-    marginTop: theme.spacing.xl,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    marginBottom: theme.spacing.md,
-    minHeight: theme.minTouchTarget,
-  },
-  cardPressed: {
-    opacity: 0.9,
-  },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  cardInfo: {
-    marginLeft: theme.spacing.md,
-  },
-  cardDate: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: '600',
-    color: theme.colors.text,
-  },
-  cardMeta: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-    marginTop: 2,
-  },
-  sectionTitle: {
-    fontSize: theme.fontSize.lg,
-    fontWeight: '600',
-    color: theme.colors.text,
-    marginTop: theme.spacing.xl,
-    marginBottom: theme.spacing.md,
-  },
-  candyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    marginBottom: theme.spacing.sm,
-    gap: theme.spacing.sm,
-  },
-  candyText: {
-    flex: 1,
-    fontSize: theme.fontSize.md,
-    color: theme.colors.text,
-  },
-  candyDate: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-  },
-  more: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.textMuted,
-    marginTop: theme.spacing.xs,
-  },
-});
