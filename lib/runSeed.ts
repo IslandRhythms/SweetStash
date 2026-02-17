@@ -104,10 +104,21 @@ export async function runSeed(db: Db): Promise<void> {
 
   for (const c of CANDY_LOGS) {
     const sessionId = c.sessionIndex >= 0 ? sessionIds[c.sessionIndex] : null;
+    let houseId: number | null = null;
+    if (c.sessionIndex >= 0 && c.houseIndexInVisit >= 0) {
+      const profileIdx = sessionProfileIndices[c.sessionIndex];
+      const visitHouseIds = houseIdsByProfile[profileIdx];
+      const visitOrder = HOUSE_VISITS.filter((hv) => hv.sessionIndex === c.sessionIndex);
+      if (c.houseIndexInVisit < visitOrder.length) {
+        const hv = visitOrder[c.houseIndexInVisit];
+        houseId = visitHouseIds[hv.houseIndexInProfile];
+      }
+    }
     await db.runAsync(
-      'INSERT INTO candy_logs (profile_id, session_id, candy_name, quantity, image_path) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO candy_logs (profile_id, session_id, house_id, candy_name, quantity, image_path) VALUES (?, ?, ?, ?, ?, ?)',
       profileIds[c.profileIndex],
       sessionId,
+      houseId,
       c.candyName,
       c.quantity,
       null

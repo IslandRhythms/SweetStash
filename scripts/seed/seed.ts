@@ -77,17 +77,20 @@ function createSchema(db: Database.Database) {
       FOREIGN KEY (house_id) REFERENCES houses(id)
     );
 
-    CREATE TABLE IF NOT EXISTS candy_logs (
+    DROP TABLE IF EXISTS candy_logs;
+    CREATE TABLE candy_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       profile_id INTEGER NOT NULL,
       session_id INTEGER,
+      house_id INTEGER,
       candy_name TEXT NOT NULL,
       quantity INTEGER NOT NULL DEFAULT 1,
       image_path TEXT,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       is_favorite INTEGER NOT NULL DEFAULT 0,
       FOREIGN KEY (profile_id) REFERENCES profiles(id),
-      FOREIGN KEY (session_id) REFERENCES sessions(id)
+      FOREIGN KEY (session_id) REFERENCES sessions(id),
+      FOREIGN KEY (house_id) REFERENCES houses(id)
     );
 
     CREATE INDEX IF NOT EXISTS idx_candy_logs_profile ON candy_logs(profile_id);
@@ -139,7 +142,7 @@ function run() {
     'INSERT INTO house_visits (session_id, house_id, visited_at) VALUES (?, ?, ?)'
   );
   const insertCandyLog = db.prepare(
-    'INSERT INTO candy_logs (profile_id, session_id, candy_name, quantity, image_path) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO candy_logs (profile_id, session_id, house_id, candy_name, quantity, image_path) VALUES (?, ?, ?, ?, ?, ?)'
   );
 
   const profileIds: number[] = [];
@@ -200,9 +203,20 @@ function run() {
 
   for (const c of CANDY_LOGS) {
     const sessionId = c.sessionIndex >= 0 ? sessionIds[c.sessionIndex] : null;
+    let houseId: number | null = null;
+    if (c.sessionIndex >= 0 && c.houseIndexInVisit >= 0) {
+      const profileIdx = sessionProfileIndices[c.sessionIndex];
+      const visitHouseIds = houseIdsByProfile[profileIdx];
+      const visitOrder = HOUSE_VISITS.filter((hv) => hv.sessionIndex === c.sessionIndex);
+      if (c.houseIndexInVisit < visitOrder.length) {
+        const hv = visitOrder[c.houseIndexInVisit];
+        houseId = visitHouseIds[hv.houseIndexInProfile];
+      }
+    }
     insertCandyLog.run(
       profileIds[c.profileIndex],
       sessionId,
+      houseId,
       c.candyName,
       c.quantity,
       null

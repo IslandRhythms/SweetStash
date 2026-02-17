@@ -58,6 +58,7 @@ export default function SessionScreen() {
   const [showHouseModal, setShowHouseModal] = useState(false);
   const [candyName, setCandyName] = useState('');
   const [candyQty, setCandyQty] = useState('1');
+  const [candyHouseId, setCandyHouseId] = useState<number | null>(null);
   const [submittingCandy, setSubmittingCandy] = useState(false);
   const [houseName, setHouseName] = useState('');
   const [houseNotes, setHouseNotes] = useState('');
@@ -179,10 +180,12 @@ export default function SessionScreen() {
     try {
       await createCandyLog(db, profile.id, name, qty, {
         sessionId: session.id,
+        houseId: candyHouseId,
         image_path: null,
       });
       setCandyName('');
       setCandyQty('1');
+      setCandyHouseId(null);
       setShowCandyModal(false);
       Alert.alert('Yum!', `Added ${name} to your haul!`);
     } catch (e) {
@@ -527,6 +530,42 @@ export default function SessionScreen() {
               onStartShouldSetResponder={() => true}
             >
               <Text style={styles.modalTitle}>Log candy</Text>
+              {houses.filter((h) => visitedHouseIds.has(h.id)).length > 0 && (
+                <>
+                  <Text style={styles.modalLabel}>From which house?</Text>
+                  <View style={styles.houseChips}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.houseChip,
+                        candyHouseId === null && { backgroundColor: theme.colors.primary },
+                        pressed && styles.houseChipPressed,
+                      ]}
+                      onPress={() => setCandyHouseId(null)}
+                    >
+                      <Text style={[styles.houseChipText, candyHouseId === null && { color: '#fff' }]}>
+                        Other
+                      </Text>
+                    </Pressable>
+                    {houses
+                      .filter((h) => visitedHouseIds.has(h.id))
+                      .map((h) => (
+                        <Pressable
+                          key={h.id}
+                          style={({ pressed }) => [
+                            styles.houseChip,
+                            candyHouseId === h.id && { backgroundColor: theme.colors.primary },
+                            pressed && styles.houseChipPressed,
+                          ]}
+                          onPress={() => setCandyHouseId(candyHouseId === h.id ? null : h.id)}
+                        >
+                          <Text style={[styles.houseChipText, candyHouseId === h.id && { color: '#fff' }]}>
+                            {h.name}
+                          </Text>
+                        </Pressable>
+                      ))}
+                  </View>
+                </>
+              )}
               <Text style={styles.modalLabel}>Candy name</Text>
               <TextInput
                 style={styles.modalInput}

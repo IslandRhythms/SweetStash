@@ -47,16 +47,16 @@ export const HOUSE_VISITS = [
   { sessionIndex: 2, houseIndexInProfile: 0 },
 ] as const;
 
-/** Candy: profileIndex, sessionIndex (-1 = standalone), candyName, quantity */
+/** Candy: profileIndex, sessionIndex (-1 = standalone), houseIndexInVisit (-1 = other), candyName, quantity */
 export const CANDY_LOGS = [
-  { profileIndex: 0, sessionIndex: 0, candyName: 'Snickers', quantity: 3 },
-  { profileIndex: 0, sessionIndex: 0, candyName: "Reese's Cups", quantity: 2 },
-  { profileIndex: 0, sessionIndex: 0, candyName: 'M&Ms', quantity: 5 },
-  { profileIndex: 0, sessionIndex: 0, candyName: 'Skittles', quantity: 1 },
-  { profileIndex: 0, sessionIndex: 1, candyName: 'Kit Kat', quantity: 2 },
-  { profileIndex: 0, sessionIndex: 1, candyName: 'Twix', quantity: 2 },
-  { profileIndex: 1, sessionIndex: 2, candyName: 'Snickers', quantity: 4 },
-  { profileIndex: 1, sessionIndex: 2, candyName: 'Starburst', quantity: 3 },
-  { profileIndex: 0, sessionIndex: -1, candyName: 'Lollipop', quantity: 1 },
-  { profileIndex: 1, sessionIndex: -1, candyName: 'Gummy Bears', quantity: 2 },
+  { profileIndex: 0, sessionIndex: 0, houseIndexInVisit: 0, candyName: 'Snickers', quantity: 3 },
+  { profileIndex: 0, sessionIndex: 0, houseIndexInVisit: 0, candyName: "Reese's Cups", quantity: 2 },
+  { profileIndex: 0, sessionIndex: 0, houseIndexInVisit: 1, candyName: 'M&Ms', quantity: 5 },
+  { profileIndex: 0, sessionIndex: 0, houseIndexInVisit: 2, candyName: 'Skittles', quantity: 1 },
+  { profileIndex: 0, sessionIndex: 1, houseIndexInVisit: 0, candyName: 'Kit Kat', quantity: 2 },
+  { profileIndex: 0, sessionIndex: 1, houseIndexInVisit: 1, candyName: 'Twix', quantity: 2 },
+  { profileIndex: 1, sessionIndex: 2, houseIndexInVisit: 0, candyName: 'Snickers', quantity: 4 },
+  { profileIndex: 1, sessionIndex: 2, houseIndexInVisit: 0, candyName: 'Starburst', quantity: 3 },
+  { profileIndex: 0, sessionIndex: -1, houseIndexInVisit: -1, candyName: 'Lollipop', quantity: 1 },
+  { profileIndex: 1, sessionIndex: -1, houseIndexInVisit: -1, candyName: 'Gummy Bears', quantity: 2 },
 ] as const;

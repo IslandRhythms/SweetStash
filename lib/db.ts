@@ -10,7 +10,7 @@ import type {
 } from '@/types';
 
 const DATABASE_NAME = 'sweetstash.db';
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 5;
 
 export async function migrateDb(db: SQLite.SQLiteDatabase) {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
@@ -130,6 +130,18 @@ export async function migrateDb(db: SQLite.SQLiteDatabase) {
       `);
     }
     await db.execAsync(`PRAGMA user_version = 4`);
+  }
+
+  if (currentVersion < 5) {
+    const cols = await db.getAllAsync<{ name: string }>(
+      'PRAGMA table_info(candy_logs)'
+    );
+    if (!cols.some((c) => c.name === 'house_id')) {
+      await db.execAsync(`
+        ALTER TABLE candy_logs ADD COLUMN house_id INTEGER REFERENCES houses(id);
+      `);
+    }
+    await db.execAsync(`PRAGMA user_version = 5`);
   }
 }
 
@@ -439,12 +451,13 @@ export async function createCandyLog(
   profileId: number,
   candyName: string,
   quantity: number,
-  opts?: { sessionId?: number | null; image_path?: string | null }
+  opts?: { sessionId?: number | null; houseId?: number | null; image_path?: string | null }
 ): Promise<number> {
   const result = await db.runAsync(
-    'INSERT INTO candy_logs (profile_id, session_id, candy_name, quantity, image_path) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO candy_logs (profile_id, session_id, house_id, candy_name, quantity, image_path) VALUES (?, ?, ?, ?, ?, ?)',
     profileId,
     opts?.sessionId ?? null,
+    opts?.houseId ?? null,
     candyName,
     quantity,
     opts?.image_path ?? null
@@ -455,7 +468,7 @@ export async function createCandyLog(
 export async function updateCandyLog(
   db: SQLite.SQLiteDatabase,
   id: number,
-  data: Partial<Pick<CandyLog, 'candy_name' | 'quantity' | 'image_path' | 'is_favorite'>>
+  data: Partial<Pick<CandyLog, 'candy_name' | 'quantity' | 'image_path' | 'is_favorite' | 'house_id'>>
 ): Promise<void> {
   if (data.candy_name !== undefined)
     await db.runAsync('UPDATE candy_logs SET candy_name = ? WHERE id = ?', data.candy_name, id);
@@ -465,6 +478,8 @@ export async function updateCandyLog(
     await db.runAsync('UPDATE candy_logs SET image_path = ? WHERE id = ?', data.image_path, id);
   if (data.is_favorite !== undefined)
     await db.runAsync('UPDATE candy_logs SET is_favorite = ? WHERE id = ?', data.is_favorite, id);
+  if (data.house_id !== undefined)
+    await db.runAsync('UPDATE candy_logs SET house_id = ? WHERE id = ?', data.house_id, id);
 }
 
 export async function setCandyFavorite(

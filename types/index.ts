@@ -52,6 +52,7 @@ export interface CandyLog {
   id: number;
   profile_id: number;
   session_id: number | null;
+  house_id: number | null;
   candy_name: string;
   quantity: number;
   image_path: string | null;

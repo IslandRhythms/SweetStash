@@ -140,6 +140,13 @@ export default function SessionSummaryScreen() {
           color: theme.colors.text,
         },
         candyQty: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
+        houseCandyBlock: { marginBottom: theme.spacing.lg },
+        houseCandyLabel: {
+          fontSize: theme.fontSize.md,
+          fontWeight: '600',
+          color: theme.colors.secondary,
+          marginBottom: theme.spacing.sm,
+        },
         houseItem: {
           fontSize: theme.fontSize.md,
           color: theme.colors.text,
@@ -223,25 +230,55 @@ export default function SessionSummaryScreen() {
 
       {candy.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Your haul</Text>
-          {candy.map((c) => (
-            <View key={c.id} style={styles.candyRow}>
-              {c.image_path && (
-                <Image
-                  source={{ uri: getImageUri(c.image_path)! }}
-                  style={styles.candyThumb}
-                />
-              )}
-              <View style={styles.candyInfo}>
-                <Text style={styles.candyName}>{c.candy_name}</Text>
-                <Text style={styles.candyQty}>× {c.quantity}</Text>
+          <Text style={styles.sectionTitle}>Your haul by house</Text>
+          {houseVisits.map((v) => {
+            const houseCandy = candy.filter((c) => c.house_id === v.house_id);
+            if (houseCandy.length === 0) return null;
+            return (
+              <View key={v.house_id} style={styles.houseCandyBlock}>
+                <Text style={styles.houseCandyLabel}>{v.house?.name ?? 'House'}</Text>
+                {houseCandy.map((c) => (
+                  <View key={c.id} style={styles.candyRow}>
+                    {c.image_path && (
+                      <Image
+                        source={{ uri: getImageUri(c.image_path)! }}
+                        style={styles.candyThumb}
+                      />
+                    )}
+                    <View style={styles.candyInfo}>
+                      <Text style={styles.candyName}>{c.candy_name}</Text>
+                      <Text style={styles.candyQty}>× {c.quantity}</Text>
+                    </View>
+                  </View>
+                ))}
               </View>
+            );
+          })}
+          {candy.filter((c) => c.house_id == null).length > 0 && (
+            <View style={styles.houseCandyBlock}>
+              <Text style={styles.houseCandyLabel}>Other</Text>
+              {candy
+                .filter((c) => c.house_id == null)
+                .map((c) => (
+                  <View key={c.id} style={styles.candyRow}>
+                    {c.image_path && (
+                      <Image
+                        source={{ uri: getImageUri(c.image_path)! }}
+                        style={styles.candyThumb}
+                      />
+                    )}
+                    <View style={styles.candyInfo}>
+                      <Text style={styles.candyName}>{c.candy_name}</Text>
+                      <Text style={styles.candyQty}>× {c.quantity}</Text>
+                    </View>
+                  </View>
+                ))}
             </View>
-          ))}
+          )}
         </>
       )}
 
-      {houseVisits.length > 0 && (
+      {houseVisits.length > 0 && candy.length === 0 && (
         <>
           <Text style={styles.sectionTitle}>Houses</Text>
           {houseVisits.map((v, i) => (
