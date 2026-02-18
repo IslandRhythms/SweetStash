@@ -23,6 +23,7 @@ module.exports = {
       },
     },
     android: {
+      package: "com.sweetstash.www",
       adaptiveIcon: {
         foregroundImage: './assets/images/app-icon.png',
         backgroundColor: '#FFF8F0',
@@ -59,6 +60,11 @@ module.exports = {
         },
       ],
     ],
+    extra: {
+      eas: {
+        projectId: "5ac106b8-d756-474a-9035-4253b46b7987"
+      }
+    },
     experiments: {
       typedRoutes: true,
     },
