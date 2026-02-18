@@ -1,12 +1,12 @@
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 
-import { useSQLiteContext } from 'expo-sqlite';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getFirstProfile, getProfile } from '@/lib/db';
+import { useSQLiteContext } from 'expo-sqlite';
 
 export default function HomeScreen() {
   const router = useRouter();

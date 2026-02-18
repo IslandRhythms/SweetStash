@@ -1,16 +1,14 @@
 # SweetStash
 
-A child-friendly Halloween candy tracking app for kids. Track your trick-or-treat haul, log houses, and see your route on the map!
+A child-friendly Halloween app for tracking your trick-or-treat haul. Log candy and houses, run a session to record your route on the map, and look back at past sessions.
 
 ## Features
 
-- **Profiles** – No login required. Create local profiles for each trick-or-treater.
-- **Log candy** – Add candy with name, quantity, and optional photo anytime.
-- **Log houses** – Record houses with notes and optional photos.
-- **Sessions** – Start a trick-or-treat session to track your route on the map (OpenStreetMap tiles via MapTiler).
-- **Summary** – View your route and haul after each session.
-- **History** – See past sessions and standalone candy/house logs.
-- **Costumes** – Associate a costume with each session.
+- **Home** – Greeting and shortcuts to log your haul or start a trick-or-treat session.
+- **My Stash** – Log candy (name, quantity, optional photo) and houses (name, notes, optional photo). Optionally link candy to your active session. Mark candy and houses as favorites.
+- **Session** – Start a trick-or-treat session, pick or add a costume, and track your route on the map. Add house visits and log candy as you go. End the session to see a summary (route and haul).
+- **History** – Browse past sessions (with candy and house counts). Tap a session to view its route and haul summary.
+- **Settings** – Switch or add profiles (no account required). Set light, dark, or system theme. Optionally load sample data for development.
 
 ## Setup
 
@@ -32,10 +30,18 @@ The app will work without a key, but maps will fall back to the default provider
 
 ```bash
 npm install
-npx expo start
+npm start
 ```
 
-Then scan the QR code with Expo Go (Android) or the Camera app (iOS).
+Or use `npx expo start`. Then scan the QR code with Expo Go (Android) or the Camera app (iOS).
+
+### Seeding (development)
+
+To generate a sample SQLite database with profiles, sessions, candy logs, and houses (written to `scripts/seed/output/sweetstash.db`):
+
+```bash
+npm run seed
+```
 
 ### Build for device
 
@@ -50,9 +56,9 @@ npx expo run:android
 
 ## Tech Stack
 
-- Expo (React Native)
-- expo-sqlite – Local database
-- expo-file-system – Image storage
-- expo-image-picker – Photo selection
-- expo-location – Route tracking
-- react-native-maps – Map display
+- **Expo** (React Native) with expo-router
+- **expo-sqlite** – Local database
+- **expo-file-system** – Image storage
+- **expo-image-picker** – Photo selection
+- **expo-location** – Route tracking
+- **react-native-maps** – Map display

@@ -4,12 +4,12 @@ module.exports = {
     slug: 'SweetStash',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/images/icon.png',
+    icon: './assets/images/app-icon.png',
     scheme: 'sweetstash',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     splash: {
-      image: './assets/images/splash-icon.png',
+      image: './assets/images/app-icon.png',
       resizeMode: 'contain',
       backgroundColor: '#FFF8F0',
     },
@@ -24,7 +24,7 @@ module.exports = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/images/adaptive-icon.png',
+        foregroundImage: './assets/images/app-icon.png',
         backgroundColor: '#FFF8F0',
       },
       edgeToEdgeEnabled: true,
@@ -41,6 +41,14 @@ module.exports = {
       favicon: './assets/images/favicon.png',
     },
     plugins: [
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "me-oa5"
+        }
+      ],
       'expo-router',
       'expo-sqlite',
       [
@@ -51,9 +59,6 @@ module.exports = {
         },
       ],
     ],
-    extra: {
-      maptilerKey: process.env.EXPO_PUBLIC_MAPTILER_KEY || '',
-    },
     experiments: {
       typedRoutes: true,
     },

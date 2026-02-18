@@ -15,7 +15,6 @@ import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme, useThemePreference } from '@/contexts/ThemeContext';
 import { createProfile, getFirstProfile, getProfile, getProfiles } from '@/lib/db';
-import { runSeed } from '@/lib/runSeed';
 import type { Profile } from '@/types';
 
 export default function SettingsScreen() {
@@ -28,7 +27,6 @@ export default function SettingsScreen() {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
-  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     loadProfiles();
@@ -43,23 +41,6 @@ export default function SettingsScreen() {
 
   async function handleSelect(p: Profile) {
     await setProfile(p);
-  }
-
-  async function handleSeed() {
-    if (seeding) return;
-    setSeeding(true);
-    try {
-      await runSeed(db);
-      await loadProfiles();
-      const first = await getFirstProfile(db);
-      if (first) await setProfile(first);
-      setShowAdd(false);
-      setNewName('');
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSeeding(false);
-    }
   }
 
   async function handleAdd() {
@@ -236,21 +217,6 @@ export default function SettingsScreen() {
       <Text style={styles.sectionSubtitle}>
         Who&apos;s tracking candy? Tap to switch.
       </Text>
-
-      <Pressable
-        style={({ pressed }) => [
-          styles.addBtn,
-          pressed && styles.addBtnPressed,
-          { marginBottom: theme.spacing.lg, backgroundColor: theme.colors.secondary },
-        ]}
-        onPress={handleSeed}
-        disabled={seeding}
-      >
-        <FontAwesome name="database" size={24} color="#fff" />
-        <Text style={styles.addBtnText}>
-          {seeding ? 'Seeding...' : 'Seed test data'}
-        </Text>
-      </Pressable>
 
       {!showAdd ? (
         <>

@@ -43,3 +43,5 @@ yarn-error.*
 
 # seed output
 scripts/seed/output/
+
+.env.local

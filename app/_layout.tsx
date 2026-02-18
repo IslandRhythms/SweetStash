@@ -10,6 +10,26 @@ import 'react-native-reanimated';
 import { ProfileProvider } from '@/contexts/ProfileContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { migrateDb } from '@/lib/db';
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://ef8abed9b50ad8fa68de64ef3c3bca7d@o4510904393334784.ingest.us.sentry.io/4510904395300864',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 function AppStack() {
   const theme = useTheme();
@@ -67,7 +87,7 @@ export const unstable_settings = {
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
@@ -100,4 +120,4 @@ export default function RootLayout() {
       </ThemeProvider>
     </SQLiteProvider>
   );
-}
+});
