@@ -11,6 +11,46 @@ import {
 import { useTheme } from '@/contexts/ThemeContext';
 import { getImageUri, saveImageFromUri, updateImage } from '@/lib/images';
 
+/**
+ * Pick an image from the camera. Returns saved file path or null if cancelled.
+ */
+export async function pickImageFromCamera(): Promise<string | null> {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    alert('Permission to use the camera is needed.');
+    return null;
+  }
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    quality: 0.8,
+  });
+  if (!result.canceled && result.assets[0]) {
+    return saveImageFromUri(result.assets[0].uri);
+  }
+  return null;
+}
+
+/**
+ * Pick an image from the library. Returns saved file path or null if cancelled.
+ */
+export async function pickImageFromLibrary(): Promise<string | null> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    alert('Permission to access photos is needed.');
+    return null;
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    quality: 0.8,
+  });
+  if (!result.canceled && result.assets[0]) {
+    return saveImageFromUri(result.assets[0].uri);
+  }
+  return null;
+}
+
 interface ImagePickerProps {
   value: string | null;
   onChange: (path: string | null) => void;

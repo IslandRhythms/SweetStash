@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,11 +14,21 @@ import {
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { useSQLiteContext } from 'expo-sqlite';
+import { pickImageFromCamera, pickImageFromLibrary } from '@/components/ImagePicker';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme, useThemePreference } from '@/contexts/ThemeContext';
-import { createProfile, getFirstProfile, getProfile, getProfiles } from '@/lib/db';
-import type { Profile } from '@/types';
+import {
+  createCandy,
+  createProfile,
+  getCandies,
+  getFirstProfile,
+  getProfile,
+  getProfiles,
+  updateCandy,
+} from '@/lib/db';
+import { getImageUri } from '@/lib/images';
+import type { Candy, Profile } from '@/types';
 
 export default function SettingsScreen() {
   const db = useSQLiteContext();
@@ -23,14 +36,78 @@ export default function SettingsScreen() {
   const { themePreference, setThemePreference } = useThemePreference();
   const { profile, setProfile } = useProfile();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [candies, setCandies] = useState<Candy[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState('');
   const [adding, setAdding] = useState(false);
 
+  const [candyModal, setCandyModal] = useState<Candy | null | 'add'>(null);
+  const [candyName, setCandyName] = useState('');
+  const [candyCategory, setCandyCategory] = useState('');
+  const [candyImagePath, setCandyImagePath] = useState('');
+  const [savingCandy, setSavingCandy] = useState(false);
+  const [pickingImage, setPickingImage] = useState(false);
+
+  const loadCandies = useCallback(async () => {
+    const list = await getCandies(db);
+    setCandies(list);
+  }, [db]);
+
   useEffect(() => {
     loadProfiles();
-  }, []);
+    loadCandies();
+  }, [loadCandies]);
+
+  function openCandyForm(candy: Candy | null) {
+    setCandyModal(candy ?? 'add');
+    setCandyName(candy?.name ?? '');
+    setCandyCategory(candy?.category ?? '');
+    setCandyImagePath(candy?.image_path ?? '');
+  }
+
+  async function handlePickCandyImage(fromCamera: boolean) {
+    if (pickingImage) return;
+    setPickingImage(true);
+    try {
+      const path = fromCamera ? await pickImageFromCamera() : await pickImageFromLibrary();
+      if (path) setCandyImagePath(path);
+    } finally {
+      setPickingImage(false);
+    }
+  }
+
+  async function handleSaveCandy() {
+    const name = candyName.trim();
+    const category = candyCategory.trim();
+    if (!name || !category) {
+      Alert.alert('Oops!', 'Name and category are required.');
+      return;
+    }
+    setSavingCandy(true);
+    try {
+      if (candyModal === 'add') {
+        await createCandy(db, {
+          name,
+          category,
+          image_path: candyImagePath.trim() || null,
+        });
+      } else if (candyModal && typeof candyModal === 'object') {
+        await updateCandy(db, candyModal.id, {
+          name,
+          category,
+          image_path: candyImagePath.trim() || null,
+        });
+      }
+      await loadCandies();
+      setCandyModal(null);
+    } catch (e) {
+      console.error(e);
+      Alert.alert('Error', 'Could not save candy. Name may already exist.');
+    } finally {
+      setSavingCandy(false);
+    }
+  }
 
   async function loadProfiles() {
     setLoading(true);
@@ -163,6 +240,57 @@ export default function SettingsScreen() {
           color: '#fff',
         },
         spacer: { height: theme.spacing.xl * 2 },
+        candyThumb: { width: 40, height: 40, borderRadius: 8, marginRight: theme.spacing.md },
+        candyCard: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.lg,
+          marginBottom: theme.spacing.sm,
+        },
+        candyCardPressed: { opacity: 0.8 },
+        candyCardName: { flex: 1, fontSize: theme.fontSize.md, fontWeight: '600', color: theme.colors.text },
+        candyCardCategory: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted },
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: theme.spacing.lg,
+        },
+        modalContent: {
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.borderRadius.lg,
+          padding: theme.spacing.lg,
+          width: '100%',
+          maxWidth: 360,
+          maxHeight: '85%',
+        },
+        modalTitle: { fontSize: theme.fontSize.xl, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.md },
+        modalLabel: { fontSize: theme.fontSize.sm, fontWeight: '600', color: theme.colors.textMuted, marginBottom: 4 },
+        modalInput: {
+          backgroundColor: theme.colors.background,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          fontSize: theme.fontSize.md,
+          color: theme.colors.text,
+          marginBottom: theme.spacing.md,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+        },
+        imagePreview: { width: 80, height: 80, borderRadius: 8, marginBottom: theme.spacing.sm, backgroundColor: theme.colors.border },
+        pickImageRow: { flexDirection: 'row', gap: theme.spacing.sm, marginBottom: theme.spacing.md },
+        pickImageBtn: {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: theme.spacing.xs,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          backgroundColor: theme.colors.border,
+        },
       }),
     [theme]
   );
@@ -212,6 +340,44 @@ export default function SettingsScreen() {
           </Pressable>
         ))}
       </View>
+
+      <Text style={styles.sectionTitle}>Candy catalog</Text>
+      <Text style={styles.sectionSubtitle}>
+        Add candies or edit name, category, and image (from your device). Used on My Stash and Session.
+      </Text>
+      <Pressable
+        style={({ pressed }) => [styles.addBtn, pressed && styles.addBtnPressed]}
+        onPress={() => openCandyForm(null)}
+      >
+        <FontAwesome name="plus" size={24} color="#fff" />
+        <Text style={styles.addBtnText}>Add candy</Text>
+      </Pressable>
+      <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator>
+        {candies.map((c) => (
+          <Pressable
+            key={c.id}
+            style={({ pressed }) => [styles.candyCard, pressed && styles.candyCardPressed]}
+            onPress={() => openCandyForm(c)}
+          >
+            {c.image_path ? (
+              <Image
+                source={{ uri: getImageUri(c.image_path)! }}
+                style={styles.candyThumb}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.candyThumb, { backgroundColor: `${theme.colors.primary}30`, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ fontSize: 18 }}>{c.emoji ?? '🍬'}</Text>
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.candyCardName}>{c.name}</Text>
+              <Text style={styles.candyCardCategory}>{c.category}</Text>
+            </View>
+            <FontAwesome name="pencil" size={18} color={theme.colors.textMuted} />
+          </Pressable>
+        ))}
+      </ScrollView>
 
       <Text style={styles.sectionTitle}>Profile</Text>
       <Text style={styles.sectionSubtitle}>
@@ -283,6 +449,89 @@ export default function SettingsScreen() {
           </View>
         </View>
       )}
+
+      <Modal
+        visible={candyModal !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCandyModal(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setCandyModal(null)} />
+          <DismissKeyboardScrollView
+            style={styles.modalContent}
+            keyboardShouldPersistTaps="handled"
+            onStartShouldSetResponder={() => true}
+          >
+            <Text style={styles.modalTitle}>{candyModal === 'add' ? 'Add candy' : 'Edit candy'}</Text>
+            <Text style={styles.modalLabel}>Name</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. Snickers"
+              placeholderTextColor={theme.colors.textMuted}
+              value={candyName}
+              onChangeText={setCandyName}
+            />
+            <Text style={styles.modalLabel}>Category</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. Chocolate, Fruity"
+              placeholderTextColor={theme.colors.textMuted}
+              value={candyCategory}
+              onChangeText={setCandyCategory}
+            />
+            <Text style={styles.modalLabel}>Image (from your device)</Text>
+            {candyImagePath && getImageUri(candyImagePath) ? (
+              <Image
+                source={{ uri: getImageUri(candyImagePath)! }}
+                style={styles.imagePreview}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={[styles.imagePreview, { justifyContent: 'center', alignItems: 'center' }]}>
+                <FontAwesome name="picture-o" size={28} color={theme.colors.textMuted} />
+              </View>
+            )}
+            <View style={styles.pickImageRow}>
+              <Pressable
+                style={({ pressed }) => [styles.pickImageBtn, pressed && { opacity: 0.8 }]}
+                onPress={() => handlePickCandyImage(true)}
+                disabled={pickingImage}
+              >
+                <FontAwesome name="camera" size={18} color={theme.colors.text} />
+                <Text style={styles.cancelBtnText}>{pickingImage ? '...' : 'Camera'}</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [styles.pickImageBtn, pressed && { opacity: 0.8 }]}
+                onPress={() => handlePickCandyImage(false)}
+                disabled={pickingImage}
+              >
+                <FontAwesome name="photo" size={18} color={theme.colors.text} />
+                <Text style={styles.cancelBtnText}>Gallery</Text>
+              </Pressable>
+            </View>
+            <View style={styles.addFormRow}>
+              <Pressable
+                style={({ pressed }) => [styles.cancelBtn, pressed && styles.btnPressed]}
+                onPress={() => setCandyModal(null)}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.saveBtn,
+                  (!candyName.trim() || !candyCategory.trim() || savingCandy) && styles.saveBtnDisabled,
+                  pressed && styles.btnPressed,
+                ]}
+                onPress={handleSaveCandy}
+                disabled={!candyName.trim() || !candyCategory.trim() || savingCandy}
+              >
+                <Text style={styles.saveBtnText}>{savingCandy ? 'Saving...' : 'Save'}</Text>
+              </Pressable>
+            </View>
+          </DismissKeyboardScrollView>
+        </View>
+      </Modal>
 
       <View style={styles.spacer} />
     </DismissKeyboardScrollView>

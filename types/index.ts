@@ -19,6 +19,21 @@ export interface Session {
   costume_id: number | null;
   started_at: string;
   ended_at: string | null;
+  name: string | null;
+  linked_session_id: number | null;
+  session_type: string | null;
+}
+
+export type StashRoundStatus = 'in_progress' | 'done';
+
+export interface StashRound {
+  id: number;
+  profile_id: number;
+  status: StashRoundStatus;
+  name: string | null;
+  linked_session_id: number | null;
+  created_at: string;
+  ended_at: string | null;
 }
 
 export interface LocationPoint {
@@ -48,10 +63,21 @@ export interface HouseVisit {
   visited_at: string;
 }
 
+export interface Candy {
+  id: number;
+  name: string;
+  category: string;
+  sort_order: number;
+  emoji: string | null;
+  is_common: 0 | 1;
+  image_path: string | null;
+}
+
 export interface CandyLog {
   id: number;
   profile_id: number;
   session_id: number | null;
+  stash_round_id: number | null;
   house_id: number | null;
   candy_name: string;
   quantity: number;

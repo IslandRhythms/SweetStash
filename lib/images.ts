@@ -64,10 +64,12 @@ export async function deleteImage(path: string): Promise<void> {
 
 /**
  * Get display URI for Image component.
- * Paths from saveImageFromUri are already file:// URIs.
+ * Only device paths are supported (file://, content://, or app document path).
+ * Returns null for URLs – images must come from the user's device.
  */
 export function getImageUri(path: string | null): string | null {
   if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return null;
   if (path.startsWith('file://') || path.startsWith('content://')) return path;
   return `file://${path}`;
 }

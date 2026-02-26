@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,17 +13,23 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { useSQLiteContext } from 'expo-sqlite';
 import { SessionMap } from '@/components/SessionMap';
+import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
+  addSessionShare,
   getCandyLogs,
   getCostume,
   getHouseVisits,
   getLocationPoints,
+  getProfile,
+  getProfiles,
   getSession,
+  getSessionSharedWithProfileIds,
   getSessionStats,
+  removeSessionShare,
 } from '@/lib/db';
 import { getImageUri } from '@/lib/images';
-import type { CandyLog, House, LocationPoint, Session } from '@/types';
+import type { CandyLog, House, LocationPoint, Profile, Session } from '@/types';
 import { Image } from 'react-native';
 
 export default function SessionSummaryScreen() {
@@ -30,6 +37,7 @@ export default function SessionSummaryScreen() {
   const router = useRouter();
   const db = useSQLiteContext();
   const theme = useTheme();
+  const { profile } = useProfile();
   const [session, setSession] = useState<Session | null>(null);
   const [points, setPoints] = useState<LocationPoint[]>([]);
   const [candy, setCandy] = useState<CandyLog[]>([]);
@@ -38,7 +46,20 @@ export default function SessionSummaryScreen() {
   >([]);
   const [stats, setStats] = useState({ candyCount: 0, houseCount: 0 });
   const [costumeName, setCostumeName] = useState<string | null>(null);
+  const [ownerProfile, setOwnerProfile] = useState<Profile | null>(null);
+  const [sharedWithProfiles, setSharedWithProfiles] = useState<Profile[]>([]);
+  const [shareModalVisible, setShareModalVisible] = useState(false);
+  const [availableProfiles, setAvailableProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const loadSharedWith = useCallback(
+    async (sessionId: number) => {
+      const ids = await getSessionSharedWithProfileIds(db, sessionId);
+      const profiles = await Promise.all(ids.map((pid) => getProfile(db, pid)));
+      setSharedWithProfiles(profiles.filter((p): p is Profile => p != null));
+    },
+    [db]
+  );
 
   useEffect(() => {
     if (!id) return;
@@ -50,6 +71,8 @@ export default function SessionSummaryScreen() {
       const s = await getSession(db, numId);
       setSession(s ?? null);
       if (s) {
+        const owner = await getProfile(db, s.profile_id);
+        setOwnerProfile(owner ?? null);
         const [pts, candyLogs, visits, sessionStats] = await Promise.all([
           getLocationPoints(db, s.id),
           getCandyLogs(db, s.profile_id, s.id),
@@ -64,10 +87,11 @@ export default function SessionSummaryScreen() {
           const c = await getCostume(db, s.costume_id);
           setCostumeName(c?.name ?? null);
         }
+        await loadSharedWith(s.id);
       }
       setLoading(false);
     })();
-  }, [id, db]);
+  }, [id, db, loadSharedWith]);
 
   const styles = useMemo(
     () =>
@@ -166,6 +190,52 @@ export default function SessionSummaryScreen() {
           fontWeight: '600',
           color: '#fff',
         },
+        shareSection: {
+          marginBottom: theme.spacing.lg,
+        },
+        shareRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          marginBottom: theme.spacing.xs,
+        },
+        shareBtn: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: theme.spacing.sm,
+          paddingVertical: theme.spacing.sm,
+          paddingHorizontal: theme.spacing.md,
+          backgroundColor: theme.colors.primary,
+          borderRadius: theme.borderRadius.md,
+        },
+        shareBtnText: { fontSize: theme.fontSize.md, fontWeight: '600', color: '#fff' },
+        sharedFrom: { fontSize: theme.fontSize.sm, color: theme.colors.textMuted, marginBottom: theme.spacing.sm },
+        unshareBtn: { padding: theme.spacing.xs },
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: theme.spacing.lg,
+        },
+        modalContent: {
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.borderRadius.lg,
+          padding: theme.spacing.lg,
+          width: '100%',
+          maxWidth: 320,
+          maxHeight: '70%',
+        },
+        modalTitle: { fontSize: theme.fontSize.lg, fontWeight: '700', color: theme.colors.text, marginBottom: theme.spacing.md },
+        profileOption: {
+          paddingVertical: theme.spacing.md,
+          paddingHorizontal: theme.spacing.sm,
+          borderBottomWidth: 1,
+          borderBottomColor: theme.colors.border,
+        },
       }),
     [theme]
   );
@@ -227,6 +297,47 @@ export default function SessionSummaryScreen() {
       <Text style={styles.meta}>
         {started.toLocaleDateString()} · {duration} min
       </Text>
+
+      {profile && session && ownerProfile && session.profile_id !== profile.id && (
+        <Text style={styles.sharedFrom}>
+          Shared from {ownerProfile.name}
+        </Text>
+      )}
+
+      {profile && session && session.profile_id === profile.id && (
+        <View style={styles.shareSection}>
+          <Text style={styles.sectionTitle}>Share with other profiles</Text>
+          {sharedWithProfiles.map((p) => (
+            <View key={p.id} style={styles.shareRow}>
+              <Text style={styles.candyName}>{p.name}</Text>
+              <Pressable
+                style={styles.unshareBtn}
+                onPress={async () => {
+                  await removeSessionShare(db, session.id, p.id);
+                  await loadSharedWith(session.id);
+                }}
+              >
+                <FontAwesome name="times-circle" size={22} color={theme.colors.textMuted} />
+              </Pressable>
+            </View>
+          ))}
+          <Pressable
+            style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.9 }]}
+            onPress={async () => {
+              if (!session) return;
+              const all = await getProfiles(db);
+              const sharedIds = new Set(sharedWithProfiles.map((p) => p.id));
+              setAvailableProfiles(
+                all.filter((p) => p.id !== session.profile_id && !sharedIds.has(p.id))
+              );
+              setShareModalVisible(true);
+            }}
+          >
+            <FontAwesome name="user-plus" size={18} color="#fff" />
+            <Text style={styles.shareBtnText}>Share with another profile</Text>
+          </Pressable>
+        </View>
+      )}
 
       {candy.length > 0 && (
         <>
@@ -295,6 +406,40 @@ export default function SessionSummaryScreen() {
       >
         <Text style={styles.doneBtnText}>Done</Text>
       </Pressable>
+
+      <Modal
+        visible={shareModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShareModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setShareModalVisible(false)} />
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <Text style={styles.modalTitle}>Share with profile</Text>
+            <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator>
+              {availableProfiles.length === 0 ? (
+                <Text style={styles.meta}>No other profiles to share with.</Text>
+              ) : (
+                availableProfiles.map((p) => (
+                  <Pressable
+                    key={p.id}
+                    style={styles.profileOption}
+                    onPress={async () => {
+                      if (!session) return;
+                      await addSessionShare(db, session.id, p.id);
+                      await loadSharedWith(session.id);
+                      setShareModalVisible(false);
+                    }}
+                  >
+                    <Text style={styles.candyName}>{p.name}</Text>
+                  </Pressable>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <View style={{ height: theme.spacing.xl }} />
     </ScrollView>
