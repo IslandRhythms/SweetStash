@@ -18,6 +18,7 @@ interface SessionMapProps {
   center?: { latitude: number; longitude: number };
   showCurrentLocation?: boolean;
   style?: object;
+  onHousePress?: (houseId: number) => void;
 }
 
 const TILE_URL = MAPTILER_API_KEY
@@ -30,6 +31,7 @@ export function SessionMap({
   center,
   showCurrentLocation = false,
   style,
+  onHousePress,
 }: SessionMapProps) {
   const theme = useTheme();
   const mapRef = useRef<MapView>(null);
@@ -158,6 +160,7 @@ export function SessionMap({
             coordinate={{ latitude: h.latitude, longitude: h.longitude }}
             title={h.name}
             pinColor="purple"
+            onPress={onHousePress ? () => onHousePress(h.id) : undefined}
           />
         ))}
       </MapView>

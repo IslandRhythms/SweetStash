@@ -29,7 +29,7 @@ import {
   removeSessionShare,
 } from '@/lib/db';
 import { getImageUri } from '@/lib/images';
-import type { CandyLog, House, LocationPoint, Profile, Session } from '@/types';
+import type { CandyLog, House, HouseVisit, LocationPoint, Profile, Session } from '@/types';
 import { Image } from 'react-native';
 
 export default function SessionSummaryScreen() {
@@ -41,9 +41,8 @@ export default function SessionSummaryScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [points, setPoints] = useState<LocationPoint[]>([]);
   const [candy, setCandy] = useState<CandyLog[]>([]);
-  const [houseVisits, setHouseVisits] = useState<
-    { house?: House }[]
-  >([]);
+  const [houseVisits, setHouseVisits] = useState<(HouseVisit & { house?: House })[]>([]);
+  const [selectedHouseVisit, setSelectedHouseVisit] = useState<(HouseVisit & { house?: House }) | null>(null);
   const [stats, setStats] = useState({ candyCount: 0, houseCount: 0 });
   const [costumeName, setCostumeName] = useState<string | null>(null);
   const [ownerProfile, setOwnerProfile] = useState<Profile | null>(null);
@@ -236,6 +235,43 @@ export default function SessionSummaryScreen() {
           borderBottomWidth: 1,
           borderBottomColor: theme.colors.border,
         },
+        houseModalOverlay: {
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: theme.spacing.lg,
+        },
+        houseModalContent: {
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.borderRadius.lg,
+          padding: theme.spacing.lg,
+          width: '100%',
+          maxWidth: 360,
+        },
+        houseModalImage: {
+          width: '100%',
+          aspectRatio: 4 / 3,
+          borderRadius: theme.borderRadius.md,
+          backgroundColor: theme.colors.border,
+          marginBottom: theme.spacing.md,
+        },
+        houseModalTitle: {
+          fontSize: theme.fontSize.lg,
+          fontWeight: '600',
+          color: theme.colors.text,
+          marginBottom: theme.spacing.sm,
+        },
+        houseModalClose: {
+          marginTop: theme.spacing.md,
+          paddingVertical: theme.spacing.sm,
+          alignItems: 'center',
+        },
+        houseModalCloseText: {
+          fontSize: theme.fontSize.md,
+          color: theme.colors.primary,
+          fontWeight: '600',
+        },
       }),
     [theme]
   );
@@ -275,8 +311,49 @@ export default function SessionSummaryScreen() {
               longitude: v.house!.longitude!,
             }))}
           style={styles.map}
+          onHousePress={(houseId) => {
+            const v = houseVisits.find((x) => x.house_id === houseId);
+            if (v) setSelectedHouseVisit(v);
+          }}
         />
       </View>
+
+      <Modal
+        visible={selectedHouseVisit != null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedHouseVisit(null)}
+      >
+        <Pressable style={styles.houseModalOverlay} onPress={() => setSelectedHouseVisit(null)}>
+          <Pressable style={styles.houseModalContent} onStartShouldSetResponder={() => true}>
+            {selectedHouseVisit?.house && (
+              <>
+                {selectedHouseVisit.house.image_path ? (
+                  <Image
+                    source={{ uri: getImageUri(selectedHouseVisit.house.image_path)! }}
+                    style={styles.houseModalImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.houseModalImage, styles.center]} />
+                )}
+                <Text style={styles.houseModalTitle}>
+                  {selectedHouseVisit.house.name}
+                </Text>
+                {selectedHouseVisit.house.notes ? (
+                  <Text style={styles.meta}>{selectedHouseVisit.house.notes}</Text>
+                ) : null}
+              </>
+            )}
+            <Pressable
+              style={styles.houseModalClose}
+              onPress={() => setSelectedHouseVisit(null)}
+            >
+              <Text style={styles.houseModalCloseText}>Close</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <View style={styles.stats}>
         <View style={styles.stat}>
