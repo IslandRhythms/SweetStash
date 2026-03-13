@@ -15,6 +15,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
+      "bundleIdentifier": "com.sweetstash.www",
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           'SweetStash needs your location to track your trick-or-treat route on the map.',
