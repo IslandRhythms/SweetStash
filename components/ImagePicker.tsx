@@ -51,6 +51,94 @@ export async function pickImageFromLibrary(): Promise<string | null> {
   return null;
 }
 
+/** New costume photo file (always a new save; use for multi-year galleries). */
+export async function pickNewCostumePhotoFromCamera(): Promise<string | null> {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    alert('Permission to use the camera is needed.');
+    return null;
+  }
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    quality: 0.8,
+  });
+  if (!result.canceled && result.assets[0]) {
+    return saveImageFromUri(result.assets[0].uri);
+  }
+  return null;
+}
+
+/** New costume photo from library (always a new save). */
+export async function pickNewCostumePhotoFromGallery(): Promise<string | null> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    alert('Permission to access photos is needed.');
+    return null;
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    quality: 0.8,
+  });
+  if (!result.canceled && result.assets[0]) {
+    return saveImageFromUri(result.assets[0].uri);
+  }
+  return null;
+}
+
+/**
+ * Take a costume photo (camera). Reuses existing file when replacing.
+ */
+export async function pickCostumePhotoWithCamera(
+  existingStoredPath: string | null
+): Promise<string | null> {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== 'granted') {
+    alert('Permission to use the camera is needed.');
+    return null;
+  }
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    quality: 0.8,
+  });
+  if (!result.canceled && result.assets[0]) {
+    const uri = result.assets[0].uri;
+    if (existingStoredPath) {
+      return updateImage(existingStoredPath, uri);
+    }
+    return saveImageFromUri(uri);
+  }
+  return null;
+}
+
+/**
+ * Choose a costume photo from the library. Reuses existing file when replacing.
+ */
+export async function pickCostumePhotoFromGallery(
+  existingStoredPath: string | null
+): Promise<string | null> {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    alert('Permission to access photos is needed.');
+    return null;
+  }
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    quality: 0.8,
+  });
+  if (!result.canceled && result.assets[0]) {
+    const uri = result.assets[0].uri;
+    if (existingStoredPath) {
+      return updateImage(existingStoredPath, uri);
+    }
+    return saveImageFromUri(uri);
+  }
+  return null;
+}
+
 interface ImagePickerProps {
   value: string | null;
   onChange: (path: string | null) => void;

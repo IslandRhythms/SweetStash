@@ -46,6 +46,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="costumes"
+        options={{
+          title: 'Costumes',
+          tabBarIcon: ({ color }) => <TabBarIcon name="magic" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="history"
         options={{
           title: 'History',

@@ -2,6 +2,9 @@ import type {
   Candy,
   CandyLog,
   Costume,
+  CostumePhoto,
+  CostumePhotoWithSession,
+  CostumeWithPhotoCount,
   House,
   HouseVisit,
   LocationPoint,
@@ -12,7 +15,7 @@ import type {
 import * as SQLite from 'expo-sqlite';
 
 const DATABASE_NAME = 'sweetstash.db';
-const DATABASE_VERSION = 10;
+const DATABASE_VERSION = 11;
 
 export async function migrateDb(db: SQLite.SQLiteDatabase) {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
@@ -359,6 +362,27 @@ export async function migrateDb(db: SQLite.SQLiteDatabase) {
     `);
     await db.execAsync(`PRAGMA user_version = 10`);
   }
+
+  if (currentVersion < 11) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS costume_photos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        costume_id INTEGER NOT NULL,
+        session_id INTEGER,
+        image_path TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (costume_id) REFERENCES costumes(id) ON DELETE CASCADE,
+        FOREIGN KEY (session_id) REFERENCES sessions(id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_costume_photos_costume ON costume_photos(costume_id);
+    `);
+    await db.runAsync(`
+      INSERT INTO costume_photos (costume_id, session_id, image_path)
+      SELECT id, NULL, image_path FROM costumes
+      WHERE image_path IS NOT NULL AND TRIM(image_path) != ''
+    `);
+    await db.execAsync(`PRAGMA user_version = 11`);
+  }
 }
 
 // Profile CRUD
@@ -441,6 +465,104 @@ export async function getCostume(
   return db.getFirstAsync<Costume>('SELECT * FROM costumes WHERE id = ?', id);
 }
 
+export async function updateCostume(
+  db: SQLite.SQLiteDatabase,
+  id: number,
+  data: Partial<Pick<Costume, 'name' | 'image_path'>>
+): Promise<void> {
+  const updates: string[] = [];
+  const values: (string | number | null)[] = [];
+  if (data.name !== undefined) {
+    updates.push('name = ?');
+    values.push(data.name);
+  }
+  if (data.image_path !== undefined) {
+    updates.push('image_path = ?');
+    values.push(data.image_path);
+  }
+  if (updates.length === 0) return;
+  values.push(id);
+  await db.runAsync(
+    `UPDATE costumes SET ${updates.join(', ')} WHERE id = ?`,
+    ...values
+  );
+}
+
+/** Append a photo for a costume (e.g. same costume different years). Updates costume cover image. */
+export async function addCostumePhoto(
+  db: SQLite.SQLiteDatabase,
+  costumeId: number,
+  imagePath: string,
+  sessionId?: number | null
+): Promise<number> {
+  const result = await db.runAsync(
+    'INSERT INTO costume_photos (costume_id, session_id, image_path) VALUES (?, ?, ?)',
+    costumeId,
+    sessionId ?? null,
+    imagePath
+  );
+  await db.runAsync('UPDATE costumes SET image_path = ? WHERE id = ?', imagePath, costumeId);
+  return result.lastInsertRowId;
+}
+
+/** Full photo pool for a costume / character across all years (Costumes tab). */
+export async function getCostumePhotos(
+  db: SQLite.SQLiteDatabase,
+  costumeId: number
+): Promise<CostumePhoto[]> {
+  return db.getAllAsync<CostumePhoto>(
+    'SELECT * FROM costume_photos WHERE costume_id = ? ORDER BY created_at ASC, id ASC',
+    costumeId
+  );
+}
+
+/** Photos recorded for this costume during one trick-or-treat session only. */
+export async function getCostumePhotosForSession(
+  db: SQLite.SQLiteDatabase,
+  costumeId: number,
+  sessionId: number
+): Promise<CostumePhoto[]> {
+  return db.getAllAsync<CostumePhoto>(
+    `SELECT * FROM costume_photos
+     WHERE costume_id = ? AND session_id = ?
+     ORDER BY created_at ASC, id ASC`,
+    costumeId,
+    sessionId
+  );
+}
+
+/** Pool photos with session date when known (ended trick-or-treat run), for gallery UI. */
+export async function getCostumePhotosWithSessionMeta(
+  db: SQLite.SQLiteDatabase,
+  costumeId: number
+): Promise<CostumePhotoWithSession[]> {
+  return db.getAllAsync<CostumePhotoWithSession>(
+    `SELECT cp.id, cp.costume_id, cp.session_id, cp.image_path, cp.created_at,
+            s.started_at AS session_started_at
+     FROM costume_photos cp
+     LEFT JOIN sessions s ON s.id = cp.session_id
+     WHERE cp.costume_id = ?
+     ORDER BY datetime(cp.created_at) DESC, cp.id DESC`,
+    costumeId
+  );
+}
+
+export async function getCostumesWithPhotoCounts(
+  db: SQLite.SQLiteDatabase,
+  profileId: number
+): Promise<CostumeWithPhotoCount[]> {
+  return db.getAllAsync<CostumeWithPhotoCount>(
+    `SELECT c.id, c.profile_id, c.name, c.image_path, c.created_at,
+            COALESCE(COUNT(cp.id), 0) AS photo_count
+     FROM costumes c
+     LEFT JOIN costume_photos cp ON cp.costume_id = c.id
+     WHERE c.profile_id = ?
+     GROUP BY c.id
+     ORDER BY c.created_at DESC`,
+    profileId
+  );
+}
+
 // Session CRUD
 export async function createSession(
   db: SQLite.SQLiteDatabase,
@@ -464,7 +586,11 @@ export async function createSession(
 export async function updateSession(
   db: SQLite.SQLiteDatabase,
   sessionId: number,
-  data: { name?: string | null; linkedSessionId?: number | null }
+  data: {
+    name?: string | null;
+    linkedSessionId?: number | null;
+    costumeId?: number | null;
+  }
 ): Promise<void> {
   if (data.name !== undefined) {
     await db.runAsync('UPDATE sessions SET name = ? WHERE id = ?', data.name, sessionId);
@@ -473,6 +599,13 @@ export async function updateSession(
     await db.runAsync(
       'UPDATE sessions SET linked_session_id = ? WHERE id = ?',
       data.linkedSessionId,
+      sessionId
+    );
+  }
+  if (data.costumeId !== undefined) {
+    await db.runAsync(
+      'UPDATE sessions SET costume_id = ? WHERE id = ?',
+      data.costumeId,
       sessionId
     );
   }
@@ -781,6 +914,24 @@ export async function getHouseVisits(
     (v as HouseVisit & { house?: House }).house = house ?? undefined;
   }
   return visits as (HouseVisit & { house?: House })[];
+}
+
+/** Remove a house visit from a session; unlink session candy from that house (keeps quantities). */
+export async function removeHouseVisitFromSession(
+  db: SQLite.SQLiteDatabase,
+  sessionId: number,
+  houseId: number
+): Promise<void> {
+  await db.runAsync(
+    'DELETE FROM house_visits WHERE session_id = ? AND house_id = ?',
+    sessionId,
+    houseId
+  );
+  await db.runAsync(
+    'UPDATE candy_logs SET house_id = NULL WHERE session_id = ? AND house_id = ?',
+    sessionId,
+    houseId
+  );
 }
 
 // Candy logs

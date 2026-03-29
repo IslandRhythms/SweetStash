@@ -45,6 +45,15 @@ function AppStack() {
           headerTintColor: '#fff',
         }}
       />
+      <Stack.Screen
+        name="costume/[id]"
+        options={{
+          title: 'Costume',
+          headerBackTitle: 'Back',
+          headerStyle: { backgroundColor: theme.colors.headerBackground },
+          headerTintColor: '#fff',
+        }}
+      />
     </Stack>
   );
 }

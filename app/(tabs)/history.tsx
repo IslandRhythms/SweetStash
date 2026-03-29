@@ -15,6 +15,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
+  getCostume,
   getFirstProfile,
   getProfile,
   getSessionStats,
@@ -29,6 +30,7 @@ type SessionWithStats = Session & {
   candyCount?: number;
   houseCount?: number;
   ownerName?: string;
+  costumeName?: string;
 };
 type StashRoundWithStats = StashRound & { candyCount?: number };
 
@@ -54,11 +56,17 @@ export default function HistoryScreen() {
           s.profile_id !== profile.id
             ? (await getProfile(db, s.profile_id))?.name ?? null
             : null;
+        let costumeName: string | undefined;
+        if (s.costume_id != null) {
+          const costume = await getCostume(db, s.costume_id);
+          costumeName = costume?.name;
+        }
         return {
           ...s,
           candyCount: st.candyCount,
           houseCount: st.houseCount,
           ownerName: ownerName ?? undefined,
+          costumeName,
         };
       })
     );
@@ -273,6 +281,7 @@ export default function HistoryScreen() {
                   </Text>
                   <Text style={styles.cardMeta}>
                     {s.candyCount ?? 0} candy · {s.houseCount ?? 0} houses
+                    {s.costumeName ? ` · ${s.costumeName}` : ''}
                     {s.ownerName ? ` · From: ${s.ownerName}` : ''}
                   </Text>
                 </View>
@@ -390,6 +399,7 @@ export default function HistoryScreen() {
                         </Text>
                         <Text style={styles.cardMeta}>
                           {s.candyCount ?? 0} candy · {s.houseCount ?? 0} houses
+                          {s.costumeName ? ` · ${s.costumeName}` : ''}
                         </Text>
                       </Pressable>
                     );

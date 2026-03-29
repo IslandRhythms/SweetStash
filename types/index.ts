@@ -13,6 +13,22 @@ export interface Costume {
   created_at: string;
 }
 
+/** One of possibly many photos for a reused costume over time. */
+export interface CostumePhoto {
+  id: number;
+  costume_id: number;
+  session_id: number | null;
+  image_path: string;
+  created_at: string;
+}
+
+/** Pool row with optional linked session date (for Costumes gallery). */
+export interface CostumePhotoWithSession extends CostumePhoto {
+  session_started_at: string | null;
+}
+
+export type CostumeWithPhotoCount = Costume & { photo_count: number };
+
 export interface Session {
   id: number;
   profile_id: number;
