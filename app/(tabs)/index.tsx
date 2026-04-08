@@ -63,6 +63,7 @@ export default function MyStashScreen() {
   const [editingImagePath, setEditingImagePath] = useState('');
   const [showAddCandyModal, setShowAddCandyModal] = useState(false);
   const [savingNewCandy, setSavingNewCandy] = useState(false);
+  const [catalogSearch, setCatalogSearch] = useState('');
 
   useEffect(() => {
     loadStoredProfile({
@@ -195,6 +196,28 @@ export default function MyStashScreen() {
     return Array.from(byCategory.entries()).sort((a, b) => a[1][0].sort_order - b[1][0].sort_order);
   }, [candies]);
 
+  const filteredOtherCandiesByCategory = useMemo(() => {
+    const q = catalogSearch.trim().toLowerCase();
+    if (!q) return otherCandiesByCategory;
+    return otherCandiesByCategory
+      .map(([category, list]) => [
+        category,
+        list.filter(
+          (c) =>
+            c.name.toLowerCase().includes(q) ||
+            c.category.toLowerCase().includes(q) ||
+            category.toLowerCase().includes(q)
+        ),
+      ] as [string, Candy[]])
+      .filter(([, list]) => list.length > 0);
+  }, [otherCandiesByCategory, catalogSearch]);
+
+  const catalogSearching = catalogSearch.trim().length > 0;
+
+  useEffect(() => {
+    if (!candyExpanded) setCatalogSearch('');
+  }, [candyExpanded]);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -294,6 +317,22 @@ export default function MyStashScreen() {
           fontWeight: '600',
           color: theme.colors.text,
           marginBottom: theme.spacing.sm,
+        },
+        catalogSearchInput: {
+          backgroundColor: theme.colors.surface,
+          paddingVertical: theme.spacing.md,
+          paddingHorizontal: theme.spacing.md,
+          borderRadius: theme.borderRadius.md,
+          fontSize: theme.fontSize.md,
+          color: theme.colors.text,
+          marginBottom: theme.spacing.md,
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+        },
+        catalogSearchEmpty: {
+          fontSize: theme.fontSize.sm,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.md,
         },
         candyChips: {
           flexDirection: 'row',
@@ -668,8 +707,22 @@ export default function MyStashScreen() {
             {otherCandiesByCategory.length > 0 && (
               <>
                 <Text style={[styles.tapLabel, { marginTop: theme.spacing.md }]}>Add candy</Text>
-                {otherCandiesByCategory.map(([category, list]) => {
-                  const isExpanded = expandedCategories.has(category);
+                <TextInput
+                  style={styles.catalogSearchInput}
+                  placeholder="Search candy or category"
+                  placeholderTextColor={theme.colors.textMuted}
+                  value={catalogSearch}
+                  onChangeText={setCatalogSearch}
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  accessibilityLabel="Search candy catalog"
+                  clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
+                />
+                {catalogSearching && filteredOtherCandiesByCategory.length === 0 ? (
+                  <Text style={styles.catalogSearchEmpty}>No candies match your search.</Text>
+                ) : null}
+                {filteredOtherCandiesByCategory.map(([category, list]) => {
+                  const isExpanded = catalogSearching || expandedCategories.has(category);
                   return (
                     <View key={category}>
                       <Pressable

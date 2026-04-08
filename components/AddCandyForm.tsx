@@ -3,6 +3,7 @@ import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Image,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -44,6 +45,13 @@ export function AddCandyForm({
   const [emoji, setEmoji] = useState('');
   const [imagePath, setImagePath] = useState<string | null>(null);
   const [pickingImage, setPickingImage] = useState(false);
+  const [categorySearch, setCategorySearch] = useState('');
+
+  const filteredCategories = useMemo(() => {
+    const q = categorySearch.trim().toLowerCase();
+    if (!q) return existingCategories;
+    return existingCategories.filter((cat) => cat.toLowerCase().includes(q));
+  }, [existingCategories, categorySearch]);
 
   const styles = useMemo(
     () =>
@@ -123,6 +131,11 @@ export function AddCandyForm({
         btnDisabled: { opacity: 0.7 },
         btnText: { fontSize: theme.fontSize.md, fontWeight: '600', color: theme.colors.text },
         btnTextPrimary: { color: '#fff' },
+        categorySearchHint: {
+          fontSize: theme.fontSize.sm,
+          color: theme.colors.textMuted,
+          marginBottom: theme.spacing.sm,
+        },
       }),
     [theme]
   );
@@ -164,21 +177,36 @@ export function AddCandyForm({
         onChangeText={setName}
       />
       <Text style={styles.label}>Category (pick below or type a new one)</Text>
-      <View style={styles.chips}>
-        {existingCategories.map((cat) => (
-          <Pressable
-            key={cat}
-            style={({ pressed }) => [
-              styles.chip,
-              category === cat && styles.chipActive,
-              pressed && styles.chipPressed,
-            ]}
-            onPress={() => setCategory(category === cat ? '' : cat)}
-          >
-            <Text style={[styles.chipText, category === cat && { color: '#fff' }]}>{cat}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Search categories"
+        placeholderTextColor={theme.colors.textMuted}
+        value={categorySearch}
+        onChangeText={setCategorySearch}
+        autoCorrect={false}
+        autoCapitalize="none"
+        accessibilityLabel="Search categories"
+        clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
+      />
+      {existingCategories.length > 0 && filteredCategories.length === 0 ? (
+        <Text style={styles.categorySearchHint}>No categories match your search.</Text>
+      ) : (
+        <View style={styles.chips}>
+          {filteredCategories.map((cat) => (
+            <Pressable
+              key={cat}
+              style={({ pressed }) => [
+                styles.chip,
+                category === cat && styles.chipActive,
+                pressed && styles.chipPressed,
+              ]}
+              onPress={() => setCategory(category === cat ? '' : cat)}
+            >
+              <Text style={[styles.chipText, category === cat && { color: '#fff' }]}>{cat}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       <TextInput
         style={styles.input}
         placeholder="Or type new category e.g. Seasonal"

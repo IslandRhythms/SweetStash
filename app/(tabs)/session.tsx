@@ -118,6 +118,7 @@ export default function SessionScreen() {
   const [costumeSectionExpanded, setCostumeSectionExpanded] = useState(false);
   const [showEndSessionModal, setShowEndSessionModal] = useState(false);
   const [imagePreviewUri, setImagePreviewUri] = useState<string | null>(null);
+  const [candyModalSearch, setCandyModalSearch] = useState('');
 
   useEffect(() => {
     getCandies(db).then(setCandies);
@@ -148,6 +149,28 @@ export default function SessionScreen() {
     );
   }, [candies]);
 
+  const filteredCandiesByCategory = useMemo(() => {
+    const q = candyModalSearch.trim().toLowerCase();
+    if (!q) return candiesByCategory;
+    return candiesByCategory
+      .map(([category, list]) => [
+        category,
+        list.filter(
+          (c) =>
+            c.name.toLowerCase().includes(q) ||
+            c.category.toLowerCase().includes(q) ||
+            category.toLowerCase().includes(q)
+        ),
+      ] as [string, Candy[]])
+      .filter(([, list]) => list.length > 0);
+  }, [candiesByCategory, candyModalSearch]);
+
+  const candyModalSearching = candyModalSearch.trim().length > 0;
+
+  useEffect(() => {
+    if (!showCandyModal) setCandyModalSearch('');
+  }, [showCandyModal]);
+
   function toggleCategory(category: string) {
     setExpandedCategories((prev) => {
       const next = new Set(prev);
@@ -176,6 +199,10 @@ export default function SessionScreen() {
         getCandyLogs(db, profile.id, s.id).then((logs) =>
           setSessionCandyCount(logs.reduce((sum, l) => sum + l.quantity, 0))
         );
+      } else {
+        setPoints([]);
+        setVisitedHouseIds(new Set());
+        setSessionCandyCount(0);
       }
       getCostumes(db, profile.id).then((c) =>
         setCostumes(c.map((x) => ({ id: x.id, name: x.name })))
@@ -246,6 +273,7 @@ export default function SessionScreen() {
       );
       if (s) {
         setSession(s);
+        setPoints([]);
         getLocationPoints(db, s.id).then(setPoints);
         getHouseVisits(db, s.id).then((visits) =>
           setVisitedHouseIds(new Set(visits.map((v) => v.house_id)))
@@ -481,9 +509,14 @@ export default function SessionScreen() {
     setEnding(true);
     try {
       subRef.current?.remove();
-      await endSession(db, session.id);
+      const endedId = session.id;
+      await endSession(db, endedId);
       setShowEndSessionModal(false);
-      router.replace(`/session/summary/${session.id}`);
+      setSession(null);
+      setPoints([]);
+      setVisitedHouseIds(new Set());
+      setSessionCandyCount(0);
+      router.replace(`/session/summary/${endedId}`);
     } catch (e) {
       console.error(e);
       Alert.alert('Error', 'Could not end session.');
@@ -604,12 +637,11 @@ export default function SessionScreen() {
           color: theme.colors.textMuted,
           textAlign: 'center',
         },
-        endSessionFooter: {
-          borderTopWidth: StyleSheet.hairlineWidth,
-          borderTopColor: theme.colors.border,
-          backgroundColor: theme.colors.surface,
-          paddingTop: theme.spacing.md,
-          paddingHorizontal: theme.spacing.lg,
+        sessionPrimaryActions: {
+          marginHorizontal: theme.spacing.lg,
+          marginTop: theme.spacing.md,
+          marginBottom: theme.spacing.lg,
+          gap: theme.spacing.md,
         },
         endSessionFooterBtn: {
           alignItems: 'center',
@@ -846,9 +878,6 @@ export default function SessionScreen() {
         addHouseButtonsRow: {
           flexDirection: 'row',
           gap: theme.spacing.md,
-          marginHorizontal: theme.spacing.lg,
-          marginTop: theme.spacing.lg,
-          marginBottom: theme.spacing.xl,
         },
         addHouseBtnHalf: {
           flex: 1,
@@ -928,7 +957,6 @@ export default function SessionScreen() {
         candyChipText: { fontSize: theme.fontSize.sm, fontWeight: '600', color: '#fff' },
         candyChipEmoji: { fontSize: theme.fontSize.md },
         candyThumbSmall: { width: 24, height: 24, borderRadius: theme.borderRadius.sm },
-        modalCandyScroll: { maxHeight: 280 },
         addNewCandyBtn: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -1065,7 +1093,7 @@ export default function SessionScreen() {
     }));
 
     const visitedHouses = houses.filter((h) => visitedHouseIds.has(h.id));
-    const housesWithCoords = houses.filter(
+    const visitedHousesWithCoords = visitedHouses.filter(
       (h): h is { id: number; name: string; latitude: number; longitude: number } =>
         h.latitude != null && h.longitude != null
     );
@@ -1074,7 +1102,9 @@ export default function SessionScreen() {
       <View style={styles.container}>
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: theme.spacing.lg }}
+          contentContainerStyle={{
+            paddingBottom: Math.max(insets.bottom, theme.spacing.md) + theme.spacing.xl + 56,
+          }}
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.sessionStatusBar}>
@@ -1086,10 +1116,76 @@ export default function SessionScreen() {
           <View style={styles.mapShrink}>
             <SessionMap
               coordinates={coords}
-              houses={housesWithCoords.map((h) => ({ id: h.id, name: h.name, latitude: h.latitude, longitude: h.longitude }))}
+              houses={visitedHousesWithCoords.map((h) => ({
+                id: h.id,
+                name: h.name,
+                latitude: h.latitude,
+                longitude: h.longitude,
+              }))}
               showCurrentLocation
+              showEndMarker={false}
               style={styles.map}
             />
+          </View>
+
+          <View style={styles.sessionPrimaryActions}>
+            <View style={styles.addHouseButtonsRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.addHouseBtnHalf,
+                  styles.addHouseBtnCamera,
+                  (housePhotoBusy || pressed) && { opacity: 0.85 },
+                ]}
+                onPress={addHouseFromCamera}
+                disabled={housePhotoBusy !== null}
+              >
+                {housePhotoBusy === 'camera' ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <FontAwesome name="camera" size={20} color="#fff" />
+                    <Text style={styles.btnText} numberOfLines={1}>
+                      Take photo
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.addHouseBtnHalf,
+                  styles.addHouseBtnGallery,
+                  (housePhotoBusy || pressed) && { opacity: 0.85 },
+                ]}
+                onPress={addHouseFromGallery}
+                disabled={housePhotoBusy !== null}
+              >
+                {housePhotoBusy === 'gallery' ? (
+                  <ActivityIndicator color="#fff" size="small" />
+                ) : (
+                  <>
+                    <FontAwesome name="image" size={20} color="#fff" />
+                    <Text style={styles.btnText} numberOfLines={1}>
+                      Gallery
+                    </Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.endSessionFooterBtn,
+                (pressed || ending) && { opacity: 0.9 },
+              ]}
+              onPress={() => setShowEndSessionModal(true)}
+              disabled={ending}
+              accessibilityRole="button"
+              accessibilityLabel="End session"
+            >
+              <View style={styles.endSessionFooterBtnInner}>
+                <FontAwesome name="stop" size={20} color="#fff" />
+                <Text style={styles.endSessionFooterBtnText}>End session</Text>
+              </View>
+            </Pressable>
           </View>
 
           <View style={styles.sessionSummaryCard}>
@@ -1331,73 +1427,7 @@ export default function SessionScreen() {
               )}
             </View>
           </View>
-
-          <View style={styles.addHouseButtonsRow}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.addHouseBtnHalf,
-                styles.addHouseBtnCamera,
-                (housePhotoBusy || pressed) && { opacity: 0.85 },
-              ]}
-              onPress={addHouseFromCamera}
-              disabled={housePhotoBusy !== null}
-            >
-              {housePhotoBusy === 'camera' ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <FontAwesome name="camera" size={20} color="#fff" />
-                  <Text style={styles.btnText} numberOfLines={1}>
-                    Take photo
-                  </Text>
-                </>
-              )}
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [
-                styles.addHouseBtnHalf,
-                styles.addHouseBtnGallery,
-                (housePhotoBusy || pressed) && { opacity: 0.85 },
-              ]}
-              onPress={addHouseFromGallery}
-              disabled={housePhotoBusy !== null}
-            >
-              {housePhotoBusy === 'gallery' ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <>
-                  <FontAwesome name="image" size={20} color="#fff" />
-                  <Text style={styles.btnText} numberOfLines={1}>
-                    Gallery
-                  </Text>
-                </>
-              )}
-            </Pressable>
-          </View>
         </ScrollView>
-
-        <View
-          style={[
-            styles.endSessionFooter,
-            { paddingBottom: Math.max(insets.bottom, theme.spacing.md) },
-          ]}
-        >
-          <Pressable
-            style={({ pressed }) => [
-              styles.endSessionFooterBtn,
-              (pressed || ending) && { opacity: 0.9 },
-            ]}
-            onPress={() => setShowEndSessionModal(true)}
-            disabled={ending}
-            accessibilityRole="button"
-            accessibilityLabel="End session"
-          >
-            <View style={styles.endSessionFooterBtnInner}>
-              <FontAwesome name="stop" size={20} color="#fff" />
-              <Text style={styles.endSessionFooterBtnText}>End session</Text>
-            </View>
-          </Pressable>
-        </View>
 
         <Modal
           visible={showEndSessionModal}
@@ -1490,7 +1520,13 @@ export default function SessionScreen() {
                 setShowCandyModal(false);
               }}
             />
-            <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <DismissKeyboardScrollView
+              style={styles.modalContent}
+              contentContainerStyle={{ paddingBottom: theme.spacing.md }}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator
+            >
               <Text style={styles.modalTitle}>
                 {addFlowActive ? `Candy from ${pendingHouse?.name ?? 'this house'}` : 'Log candy'}
               </Text>
@@ -1558,14 +1594,28 @@ export default function SessionScreen() {
               </Pressable>
 
               <Text style={[styles.modalLabel, { marginTop: theme.spacing.sm }]}>Tap candy to add</Text>
-              <ScrollView style={styles.modalCandyScroll} showsVerticalScrollIndicator>
-                {candiesByCategory.length === 0 ? (
-                  <Text style={[styles.status, { marginTop: theme.spacing.sm }]}>
-                    No candies in catalog yet. Add one above or in Settings.
-                  </Text>
-                ) : (
-                candiesByCategory.map(([category, list]) => {
-                  const isExpanded = expandedCategories.has(category);
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Search candy or category"
+                placeholderTextColor={theme.colors.textMuted}
+                value={candyModalSearch}
+                onChangeText={setCandyModalSearch}
+                autoCorrect={false}
+                autoCapitalize="none"
+                accessibilityLabel="Search candy catalog"
+                clearButtonMode={Platform.OS === 'ios' ? 'while-editing' : 'never'}
+              />
+              {candiesByCategory.length === 0 ? (
+                <Text style={[styles.status, { marginTop: theme.spacing.sm }]}>
+                  No candies in catalog yet. Add one above or in Settings.
+                </Text>
+              ) : candyModalSearching && filteredCandiesByCategory.length === 0 ? (
+                <Text style={[styles.status, { marginTop: theme.spacing.sm }]}>
+                  No candies match your search.
+                </Text>
+              ) : (
+                filteredCandiesByCategory.map(([category, list]) => {
+                  const isExpanded = candyModalSearching || expandedCategories.has(category);
                   return (
                     <View key={category}>
                       <Pressable
@@ -1615,8 +1665,7 @@ export default function SessionScreen() {
                     </View>
                   );
                 })
-                )}
-              </ScrollView>
+              )}
               <View style={styles.modalRow}>
                 {addFlowActive ? (
                   <>
@@ -1654,7 +1703,7 @@ export default function SessionScreen() {
                   </Pressable>
                 )}
               </View>
-            </View>
+            </DismissKeyboardScrollView>
           </View>
         </Modal>
 
@@ -1677,9 +1726,11 @@ export default function SessionScreen() {
             />
             <DismissKeyboardScrollView
               style={styles.modalContent}
-              contentContainerStyle={{ flexGrow: 1 }}
+              contentContainerStyle={{ paddingBottom: theme.spacing.xl }}
               keyboardShouldPersistTaps="handled"
-              onStartShouldSetResponder={() => true}
+              keyboardDismissMode="on-drag"
+              showsVerticalScrollIndicator
+              automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
             >
               <AddCandyForm
                 existingCategories={existingCategories}
@@ -1874,7 +1925,7 @@ export default function SessionScreen() {
             <Text style={styles.stepIndexText}>5</Text>
           </View>
           <Text style={styles.stepBody}>
-            Use End session at the bottom of the screen to save and open your summary.
+            Use End session under the map to save and open your summary.
           </Text>
         </View>
       </View>

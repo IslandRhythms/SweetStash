@@ -17,6 +17,7 @@ interface SessionMapProps {
   houses?: HouseMarker[];
   center?: { latitude: number; longitude: number };
   showCurrentLocation?: boolean;
+  showEndMarker?: boolean;
   style?: object;
   onHousePress?: (houseId: number) => void;
 }
@@ -30,6 +31,7 @@ export function SessionMap({
   houses = [],
   center,
   showCurrentLocation = false,
+  showEndMarker = true,
   style,
   onHousePress,
 }: SessionMapProps) {
@@ -145,7 +147,8 @@ export function SessionMap({
             pinColor="green"
           />
         )}
-        {coordinates.length >= 2 &&
+        {showEndMarker &&
+          coordinates.length >= 2 &&
           (coordinates[0].latitude !== coordinates[coordinates.length - 1].latitude ||
             coordinates[0].longitude !== coordinates[coordinates.length - 1].longitude) && (
           <Marker
