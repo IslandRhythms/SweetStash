@@ -1,12 +1,9 @@
-import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,10 +18,8 @@ import { pickImageFromCamera, pickImageFromLibrary } from '@/components/ImagePic
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme, useThemePreference } from '@/contexts/ThemeContext';
-import { parseHousesFromCsv } from '@/lib/csvHouses';
 import {
   createCandy,
-  createHouse,
   createProfile,
   getCandies,
   getFirstProfile,
@@ -55,7 +50,6 @@ export default function SettingsScreen() {
   const [savingCandy, setSavingCandy] = useState(false);
   const [pickingImage, setPickingImage] = useState(false);
   const [houses, setHouses] = useState<House[]>([]);
-  const [importingHouses, setImportingHouses] = useState(false);
 
   const loadCandies = useCallback(async () => {
     const list = await getCandies(db);
@@ -139,76 +133,6 @@ export default function SettingsScreen() {
 
   async function handleSelect(p: Profile) {
     await setProfile(p);
-  }
-
-  async function readPickedDocumentUtf8(
-    asset: DocumentPicker.DocumentPickerAsset
-  ): Promise<string> {
-    if (asset.file) {
-      return asset.file.text();
-    }
-    return FileSystem.readAsStringAsync(asset.uri);
-  }
-
-  async function handleImportHousesCsv() {
-    if (!profile || importingHouses) return;
-    if (Platform.OS === 'web') {
-      Alert.alert(
-        'Not available on web',
-        'CSV import for houses works in the iOS and Android app.'
-      );
-      return;
-    }
-    setImportingHouses(true);
-    try {
-      const pick = await DocumentPicker.getDocumentAsync({
-        type: [
-          'text/csv',
-          'text/comma-separated-values',
-          'text/plain',
-          'application/vnd.ms-excel',
-        ],
-        copyToCacheDirectory: true,
-      });
-      if (pick.canceled || !pick.assets?.length) return;
-
-      const raw = await readPickedDocumentUtf8(pick.assets[0]);
-      const { rows, skippedEmpty } = parseHousesFromCsv(raw);
-
-      if (rows.length === 0) {
-        Alert.alert(
-          'No houses imported',
-          skippedEmpty > 0
-            ? `${skippedEmpty} row${skippedEmpty === 1 ? '' : 's'} had no name (or file has no data rows). Check the header row and required name column.`
-            : 'The file needs a header row and at least one data row with a name.'
-        );
-        return;
-      }
-
-      let imported = 0;
-      for (const r of rows) {
-        await createHouse(db, profile.id, r.name, {
-          latitude: r.latitude,
-          longitude: r.longitude,
-          notes: r.notes,
-        });
-        imported++;
-      }
-      await loadHouses();
-
-      const parts = [
-        `Imported ${imported} house${imported === 1 ? '' : 'es'}.`,
-        skippedEmpty > 0
-          ? `${skippedEmpty} row${skippedEmpty === 1 ? '' : 's'} skipped (missing name).`
-          : '',
-      ].filter(Boolean);
-      Alert.alert('Import complete', parts.join(' '));
-    } catch (e) {
-      console.error(e);
-      Alert.alert('Import failed', 'Could not read or parse the file. Try a UTF-8 CSV with a header row.');
-    } finally {
-      setImportingHouses(false);
-    }
   }
 
   async function handleAdd() {
@@ -382,16 +306,6 @@ export default function SettingsScreen() {
           borderRadius: theme.borderRadius.md,
           backgroundColor: theme.colors.border,
         },
-        housesImportBtn: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: theme.colors.secondary,
-          padding: theme.spacing.lg,
-          borderRadius: theme.borderRadius.lg,
-          gap: theme.spacing.sm,
-          marginTop: theme.spacing.md,
-        },
       }),
     [theme]
   );
@@ -483,28 +397,8 @@ export default function SettingsScreen() {
       <Text style={styles.sectionTitle}>Houses</Text>
       <Text style={styles.sectionSubtitle}>
         {profile
-          ? `${houses.length} saved house${houses.length === 1 ? '' : 'es'}. Import a CSV to add many at once (used on the Session map after you visit them).`
+          ? `${houses.length} saved house${houses.length === 1 ? '' : 'es'} (used on the Session map after you visit them).`
           : 'Select a profile to manage houses.'}
-      </Text>
-      <Pressable
-        style={({ pressed }) => [
-          styles.housesImportBtn,
-          pressed && styles.addBtnPressed,
-          (importingHouses || !profile) && styles.saveBtnDisabled,
-        ]}
-        onPress={() => void handleImportHousesCsv()}
-        disabled={importingHouses || !profile}
-        accessibilityRole="button"
-        accessibilityLabel="Import houses from CSV file"
-      >
-        <FontAwesome name="upload" size={22} color="#fff" />
-        <Text style={styles.addBtnText}>
-          {importingHouses ? 'Importing...' : 'Import houses from CSV'}
-        </Text>
-      </Pressable>
-      <Text style={[styles.sectionSubtitle, { marginTop: theme.spacing.sm, marginBottom: 0 }]}>
-        CSV needs a header row. Name one column name, address, house, or location (required).
-        Optional columns: latitude, lat, longitude, lng, notes.
       </Text>
 
       <Text style={styles.sectionTitle}>Profile</Text>

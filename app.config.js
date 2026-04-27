@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: 'SweetStash',
     slug: 'SweetStash',
-    version: '1.0.0',
+    version: '1.0.1',
     orientation: 'portrait',
     icon: './assets/images/app-icon.png',
     scheme: 'sweetstash',
@@ -15,8 +15,8 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      "bundleIdentifier": "com.sweetstash.www",
-      "config": {
+      bundleIdentifier: 'com.sweetstash.www',
+      config: {
         "usesNonExemptEncryption": false
       },
       infoPlist: {

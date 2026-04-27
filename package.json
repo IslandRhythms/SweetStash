@@ -1,7 +1,7 @@
 {
   "name": "sweetstash",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "seed": "cd scripts/seed && npm install && npm run seed",
     "start": "expo start",
@@ -20,7 +20,6 @@
     "@sentry/react-native": "^8.0.0",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
-    "expo-document-picker": "~14.0.8",
     "expo-file-system": "~19.0.21",
     "expo-font": "~14.0.11",
     "expo-image-picker": "~17.0.10",
