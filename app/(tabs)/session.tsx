@@ -19,6 +19,7 @@ import {
 
 import { AddCandyForm } from '@/components/AddCandyForm';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
+import { HouseStopModal } from '@/components/HouseStopModal';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import {
   pickImageFromCamera,
@@ -27,6 +28,7 @@ import {
   pickNewCostumePhotoFromGallery,
 } from '@/components/ImagePicker';
 import { SessionMap } from '@/components/SessionMap';
+import { SessionStopList } from '@/components/SessionStopList';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -45,6 +47,7 @@ import {
   getFirstProfile,
   getCandyLogs,
   getCostumePhotosForSession,
+  getHouse,
   getHouseVisits,
   getHouses,
   getLocationPoints,
@@ -53,7 +56,7 @@ import {
   updateSession,
 } from '@/lib/db';
 import { getImageUri } from '@/lib/images';
-import type { Candy, CostumePhoto, LocationPoint, Session } from '@/types';
+import type { Candy, CostumePhoto, House, LocationPoint, Session } from '@/types';
 import * as Location from 'expo-location';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,8 +71,9 @@ export default function SessionScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [points, setPoints] = useState<LocationPoint[]>([]);
   const [costumes, setCostumes] = useState<{ id: number; name: string }[]>([]);
-  const [houses, setHouses] = useState<{ id: number; name: string; latitude: number | null; longitude: number | null }[]>([]);
+  const [houses, setHouses] = useState<House[]>([]);
   const [visitedHouseIds, setVisitedHouseIds] = useState<Set<number>>(new Set());
+  const [selectedVisitedHouse, setSelectedVisitedHouse] = useState<House | null>(null);
   const [newCostumeName, setNewCostumeName] = useState('');
   const [addingCostume, setAddingCostume] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -207,9 +211,7 @@ export default function SessionScreen() {
       getCostumes(db, profile.id).then((c) =>
         setCostumes(c.map((x) => ({ id: x.id, name: x.name })))
       );
-      getHouses(db, profile.id).then((h) =>
-        setHouses(h.map((x) => ({ id: x.id, name: x.name, latitude: x.latitude, longitude: x.longitude })))
-      );
+      getHouses(db, profile.id).then(setHouses);
     });
   }, [profile, db]);
 
@@ -413,7 +415,8 @@ export default function SessionScreen() {
           });
         }
       }
-      setHouses((prev) => [...prev, { id, name, latitude: lat, longitude: lng }]);
+      const created = await getHouse(db, id);
+      if (created) setHouses((prev) => [...prev, created]);
       setVisitedHouseIds((prev) => new Set([...prev, id]));
       setPendingHouse(null);
       setPendingCandy([]);
@@ -1094,9 +1097,15 @@ export default function SessionScreen() {
 
     const visitedHouses = houses.filter((h) => visitedHouseIds.has(h.id));
     const visitedHousesWithCoords = visitedHouses.filter(
-      (h): h is { id: number; name: string; latitude: number; longitude: number } =>
+      (h): h is House & { latitude: number; longitude: number } =>
         h.latitude != null && h.longitude != null
     );
+    const mapStops = visitedHousesWithCoords.map((h) => ({ id: h.id, name: h.name }));
+
+    function openVisitedHouse(houseId: number) {
+      const house = houses.find((h) => h.id === houseId);
+      if (house) setSelectedVisitedHouse(house);
+    }
 
     return (
       <View style={styles.container}>
@@ -1113,7 +1122,10 @@ export default function SessionScreen() {
             </Text>
           </View>
 
-          <View style={styles.mapShrink}>
+          <View
+            style={styles.mapShrink}
+            pointerEvents={selectedVisitedHouse != null ? 'none' : 'auto'}
+          >
             <SessionMap
               coordinates={coords}
               houses={visitedHousesWithCoords.map((h) => ({
@@ -1125,8 +1137,15 @@ export default function SessionScreen() {
               showCurrentLocation
               showEndMarker={false}
               style={styles.map}
+              onHousePress={openVisitedHouse}
             />
           </View>
+
+          <SessionStopList
+            stops={mapStops}
+            onStopPress={openVisitedHouse}
+            style={{ marginHorizontal: theme.spacing.lg }}
+          />
 
           <View style={styles.sessionPrimaryActions}>
             <View style={styles.addHouseButtonsRow}>
@@ -1493,6 +1512,18 @@ export default function SessionScreen() {
           visible={imagePreviewUri != null}
           imageUri={imagePreviewUri}
           onClose={() => setImagePreviewUri(null)}
+        />
+
+        <HouseStopModal
+          visible={selectedVisitedHouse != null}
+          name={selectedVisitedHouse?.name ?? 'House'}
+          notes={selectedVisitedHouse?.notes}
+          imagePath={selectedVisitedHouse?.image_path}
+          onClose={() => setSelectedVisitedHouse(null)}
+          onImagePress={(uri) => {
+            setSelectedVisitedHouse(null);
+            setImagePreviewUri(uri);
+          }}
         />
 
         <Modal

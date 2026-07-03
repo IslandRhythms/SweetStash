@@ -113,6 +113,7 @@ export function SessionMap({
         region={region ? undefined : defaultRegion}
         mapType={Platform.OS === 'android' && TILE_URL ? 'none' : 'standard'}
         showsUserLocation={showCurrentLocation}
+        moveOnMarkerPress={false}
       >
         {TILE_URL && (
           <UrlTile
@@ -163,6 +164,7 @@ export function SessionMap({
             coordinate={{ latitude: h.latitude, longitude: h.longitude }}
             title={h.name}
             pinColor="purple"
+            tracksViewChanges={false}
             onPress={onHousePress ? () => onHousePress(h.id) : undefined}
           />
         ))}

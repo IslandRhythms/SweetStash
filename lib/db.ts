@@ -14,8 +14,10 @@ import type {
 } from '@/types';
 import * as SQLite from 'expo-sqlite';
 
+import { normalizeStoredImagePath } from '@/lib/images';
+
 const DATABASE_NAME = 'sweetstash.db';
-const DATABASE_VERSION = 11;
+const DATABASE_VERSION = 12;
 
 export async function migrateDb(db: SQLite.SQLiteDatabase) {
   const row = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
@@ -382,6 +384,34 @@ export async function migrateDb(db: SQLite.SQLiteDatabase) {
       WHERE image_path IS NOT NULL AND TRIM(image_path) != ''
     `);
     await db.execAsync(`PRAGMA user_version = 11`);
+  }
+
+  if (currentVersion < 12) {
+    await migrateStoredImagePaths(db);
+    await db.execAsync(`PRAGMA user_version = 12`);
+  }
+}
+
+async function migrateStoredImagePaths(db: SQLite.SQLiteDatabase): Promise<void> {
+  const tables: { table: string; column: string }[] = [
+    { table: 'profiles', column: 'avatar_path' },
+    { table: 'costumes', column: 'image_path' },
+    { table: 'houses', column: 'image_path' },
+    { table: 'candy_logs', column: 'image_path' },
+    { table: 'candies', column: 'image_path' },
+    { table: 'costume_photos', column: 'image_path' },
+  ];
+
+  for (const { table, column } of tables) {
+    const rows = await db.getAllAsync<{ id: number; val: string }>(
+      `SELECT id, ${column} AS val FROM ${table} WHERE ${column} IS NOT NULL AND TRIM(${column}) != ''`
+    );
+    for (const row of rows) {
+      const normalized = normalizeStoredImagePath(row.val);
+      if (normalized !== row.val) {
+        await db.runAsync(`UPDATE ${table} SET ${column} = ? WHERE id = ?`, normalized, row.id);
+      }
+    }
   }
 }
 

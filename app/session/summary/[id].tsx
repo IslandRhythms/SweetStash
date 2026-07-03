@@ -12,12 +12,14 @@ import {
   View,
 } from 'react-native';
 
+import { HouseStopModal } from '@/components/HouseStopModal';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import {
   pickNewCostumePhotoFromCamera,
   pickNewCostumePhotoFromGallery,
 } from '@/components/ImagePicker';
 import { SessionMap } from '@/components/SessionMap';
+import { SessionStopList } from '@/components/SessionStopList';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -183,6 +185,7 @@ export default function SessionSummaryScreen() {
     () =>
       StyleSheet.create({
         container: { flex: 1, backgroundColor: theme.colors.background },
+        screenRoot: { flex: 1, backgroundColor: theme.colors.background },
         content: { padding: theme.spacing.lg },
         center: { justifyContent: 'center', alignItems: 'center' },
         title: {
@@ -375,43 +378,6 @@ export default function SessionSummaryScreen() {
           borderBottomWidth: 1,
           borderBottomColor: theme.colors.border,
         },
-        houseModalOverlay: {
-          flex: 1,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: theme.spacing.lg,
-        },
-        houseModalContent: {
-          backgroundColor: theme.colors.surface,
-          borderRadius: theme.borderRadius.lg,
-          padding: theme.spacing.lg,
-          width: '100%',
-          maxWidth: 360,
-        },
-        houseModalImage: {
-          width: '100%',
-          aspectRatio: 4 / 3,
-          borderRadius: theme.borderRadius.md,
-          backgroundColor: theme.colors.border,
-          marginBottom: theme.spacing.md,
-        },
-        houseModalTitle: {
-          fontSize: theme.fontSize.lg,
-          fontWeight: '600',
-          color: theme.colors.text,
-          marginBottom: theme.spacing.sm,
-        },
-        houseModalClose: {
-          marginTop: theme.spacing.md,
-          paddingVertical: theme.spacing.sm,
-          alignItems: 'center',
-        },
-        houseModalCloseText: {
-          fontSize: theme.fontSize.md,
-          color: theme.colors.primary,
-          fontWeight: '600',
-        },
         summaryCostumeEdit: {
           marginBottom: theme.spacing.lg,
         },
@@ -515,76 +481,42 @@ export default function SessionSummaryScreen() {
     ? Math.round((ended.getTime() - started.getTime()) / 60000)
     : 0;
 
+  const mapHouseVisits = houseVisits.filter(
+    (v) => v.house?.latitude != null && v.house?.longitude != null
+  );
+  const mapStops = mapHouseVisits.map((v) => ({
+    id: v.house!.id,
+    name: v.house!.name,
+  }));
+
+  function openHouseStop(houseId: number) {
+    const v = houseVisits.find((x) => x.house_id === houseId);
+    if (v) setSelectedHouseVisit(v);
+  }
+
   return (
-    <>
+    <View style={styles.screenRoot}>
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Session complete!</Text>
 
-      <View style={styles.mapWrap}>
+      <View
+        style={styles.mapWrap}
+        pointerEvents={selectedHouseVisit != null ? 'none' : 'auto'}
+      >
         <SessionMap
           coordinates={coords}
-          houses={houseVisits
-            .filter((v) => v.house?.latitude != null && v.house?.longitude != null)
-            .map((v) => ({
-              id: v.house!.id,
-              name: v.house!.name,
-              latitude: v.house!.latitude!,
-              longitude: v.house!.longitude!,
-            }))}
+          houses={mapHouseVisits.map((v) => ({
+            id: v.house!.id,
+            name: v.house!.name,
+            latitude: v.house!.latitude!,
+            longitude: v.house!.longitude!,
+          }))}
           style={styles.map}
-          onHousePress={(houseId) => {
-            const v = houseVisits.find((x) => x.house_id === houseId);
-            if (v) setSelectedHouseVisit(v);
-          }}
+          onHousePress={openHouseStop}
         />
       </View>
 
-      <Modal
-        visible={selectedHouseVisit != null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelectedHouseVisit(null)}
-      >
-        <Pressable style={styles.houseModalOverlay} onPress={() => setSelectedHouseVisit(null)}>
-          <Pressable style={styles.houseModalContent} onStartShouldSetResponder={() => true}>
-            {selectedHouseVisit?.house && (
-              <>
-                {selectedHouseVisit.house.image_path ? (
-                  <Pressable
-                    onPress={() =>
-                      setImagePreviewUri(
-                        getImageUri(selectedHouseVisit.house!.image_path) ?? null
-                      )
-                    }
-                    accessibilityRole="button"
-                    accessibilityLabel="View house photo full size"
-                  >
-                    <Image
-                      source={{ uri: getImageUri(selectedHouseVisit.house.image_path)! }}
-                      style={styles.houseModalImage}
-                      resizeMode="cover"
-                    />
-                  </Pressable>
-                ) : (
-                  <View style={[styles.houseModalImage, styles.center]} />
-                )}
-                <Text style={styles.houseModalTitle}>
-                  {selectedHouseVisit.house.name}
-                </Text>
-                {selectedHouseVisit.house.notes ? (
-                  <Text style={styles.meta}>{selectedHouseVisit.house.notes}</Text>
-                ) : null}
-              </>
-            )}
-            <Pressable
-              style={styles.houseModalClose}
-              onPress={() => setSelectedHouseVisit(null)}
-            >
-              <Text style={styles.houseModalCloseText}>Close</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
+      <SessionStopList stops={mapStops} onStopPress={openHouseStop} />
 
       <View style={styles.stats}>
         <View style={styles.stat}>
@@ -1024,6 +956,18 @@ export default function SessionSummaryScreen() {
       imageUri={imagePreviewUri}
       onClose={() => setImagePreviewUri(null)}
     />
-    </>
+
+    <HouseStopModal
+      visible={selectedHouseVisit != null}
+      name={selectedHouseVisit?.house?.name ?? 'House'}
+      notes={selectedHouseVisit?.house?.notes}
+      imagePath={selectedHouseVisit?.house?.image_path}
+      onClose={() => setSelectedHouseVisit(null)}
+      onImagePress={(uri) => {
+        setSelectedHouseVisit(null);
+        setImagePreviewUri(uri);
+      }}
+    />
+    </View>
   );
 }
