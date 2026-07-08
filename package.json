@@ -1,17 +1,19 @@
 {
   "name": "sweetstash",
   "main": "expo-router/entry",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "scripts": {
     "seed": "cd scripts/seed && npm install && npm run seed",
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "xcode": "npx expo prebuild --platform ios",
     "build:test:android": "eas build -p android --profile preview",
     "build:test:ios": "eas build -p ios --profile preview",
     "build:test": "eas build -p all --profile preview",
-    "build:production": "eas build --profile production"
+    "build:production": "eas build --profile production",
+    "submit:ios": "eas submit --platform ios --latest"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
