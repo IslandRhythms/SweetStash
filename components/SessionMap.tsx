@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
-import MapView, { Marker, Polyline, UrlTile } from 'react-native-maps';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 
 import { useTheme } from '@/contexts/ThemeContext';
-import { MAPTILER_API_KEY } from '@/lib/constants';
 
 interface HouseMarker {
   id: number;
@@ -21,10 +20,6 @@ interface SessionMapProps {
   style?: object;
   onHousePress?: (houseId: number) => void;
 }
-
-const TILE_URL = MAPTILER_API_KEY
-  ? `https://tile.openstreetmap.org/{z}/{x}/{y}.png`
-  : undefined;
 
 export function SessionMap({
   coordinates,
@@ -111,16 +106,10 @@ export function SessionMap({
         style={styles.map}
         initialRegion={defaultRegion}
         region={region ? undefined : defaultRegion}
-        mapType={Platform.OS === 'android' && TILE_URL ? 'none' : 'standard'}
+        mapType="standard"
         showsUserLocation={showCurrentLocation}
         moveOnMarkerPress={false}
       >
-        {TILE_URL && (
-          <UrlTile
-            urlTemplate={TILE_URL}
-            shouldReplaceMapContent={Platform.OS === 'ios'}
-          />
-        )}
         {coordinates.length >= 2 && (
           <>
             <Polyline

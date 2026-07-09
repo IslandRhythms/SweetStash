@@ -12,20 +12,6 @@ A child-friendly Halloween app for tracking your trick-or-treat haul. Log candy 
 
 ## Setup
 
-### MapTiler API Key (for maps)
-
-The app uses MapTiler for OpenStreetMap-style tiles. Get a free API key:
-
-1. Sign up at [MapTiler Cloud](https://cloud.maptiler.com/)
-2. Create an API key from your account dashboard
-3. Create a `.env` file in the project root:
-
-```
-EXPO_PUBLIC_MAPTILER_KEY=your_api_key_here
-```
-
-The app will work without a key, but maps will fall back to the default provider (Apple/Google).
-
 ### Run the app
 
 ```bash
@@ -69,16 +55,6 @@ SweetStash is built with [Expo Application Services (EAS)](https://docs.expo.dev
 1. In **Apple Developer → Identifiers**, ensure an App ID exists for the bundle identifier **`com.sweetstash.www`** (must match `app.config.js` → `ios.bundleIdentifier`).
 2. In **App Store Connect → Apps**, create a new app with that **bundle ID**, name **SweetStash**, and the same primary language you plan to use for the store listing.
 3. Accept agreements and fill in the minimum **App Privacy** details App Store Connect asks for; TestFlight internal testing still needs a coherent app record.
-
-### MapTiler key on EAS builds (optional)
-
-If you want MapTiler tiles in release builds, define the same variable EAS injects at build time:
-
-```bash
-eas secret:create --scope project --name EXPO_PUBLIC_MAPTILER_KEY --value your_key_here --type string
-```
-
-Or configure it under **Environment variables** for your project on [expo.dev](https://expo.dev). Without it, the app falls back to the default map provider as described in [MapTiler API Key](#maptiler-api-key-for-maps) above.
 
 ### Build an iOS binary for TestFlight
 
