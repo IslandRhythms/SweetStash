@@ -20,10 +20,12 @@ module.exports = {
         "usesNonExemptEncryption": false
       },
       infoPlist: {
+        NSCameraUsageDescription:
+          'SweetStash uses the camera so you can take photos of candy, costumes, and houses during your trick-or-treat session.',
         NSLocationWhenInUseUsageDescription:
           'SweetStash needs your location to track your trick-or-treat route on the map.',
         NSPhotoLibraryUsageDescription:
-          'SweetStash needs access to your photos to add pictures of your candy and houses.',
+          'SweetStash needs access to your photos to add pictures of your candy, costumes, and houses.',
       },
     },
     android: {
@@ -36,6 +38,7 @@ module.exports = {
       permissions: [
         'ACCESS_FINE_LOCATION',
         'ACCESS_COARSE_LOCATION',
+        'CAMERA',
         'READ_EXTERNAL_STORAGE',
         'READ_MEDIA_IMAGES',
       ],
@@ -56,6 +59,15 @@ module.exports = {
       ],
       'expo-router',
       'expo-sqlite',
+      [
+        'expo-image-picker',
+        {
+          cameraPermission:
+            'SweetStash uses the camera so you can take photos of candy, costumes, and houses during your trick-or-treat session.',
+          photosPermission:
+            'SweetStash needs access to your photos to add pictures of your candy, costumes, and houses.',
+        },
+      ],
       [
         'expo-location',
         {
