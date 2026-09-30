@@ -105,7 +105,7 @@ export default function CostumesScreen() {
   if (!ready || !profile) {
     return (
       <View style={[styles.center, styles.container]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }

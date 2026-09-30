@@ -240,7 +240,7 @@ export default function HistoryScreen() {
   if (!ready || !profile) {
     return (
       <View style={[styles.center, styles.container]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -270,7 +270,7 @@ export default function HistoryScreen() {
               onPress={() => router.push(`/session/summary/${s.id}`)}
             >
               <View style={styles.cardLeft}>
-                <FontAwesome name="map" size={28} color={theme.colors.primary} />
+                <FontAwesome name="map" size={28} color={theme.colors.primaryText} />
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardDate}>
                     {started.toLocaleDateString(undefined, {
@@ -280,7 +280,8 @@ export default function HistoryScreen() {
                     })}
                   </Text>
                   <Text style={styles.cardMeta}>
-                    {s.candyCount ?? 0} candy · {s.houseCount ?? 0} houses
+                    {s.candyCount ?? 0} candy · {s.houseCount ?? 0}{' '}
+                    {s.houseCount === 1 ? 'house' : 'houses'}
                     {s.costumeName ? ` · ${s.costumeName}` : ''}
                     {s.ownerName ? ` · From: ${s.ownerName}` : ''}
                   </Text>
@@ -305,7 +306,7 @@ export default function HistoryScreen() {
           return (
             <View key={r.id} style={styles.card}>
               <View style={styles.cardLeft}>
-                <FontAwesome name="gift" size={28} color={theme.colors.primary} />
+                <FontAwesome name="gift" size={28} color={theme.colors.primaryText} />
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardDate}>
                     {r.name || date.toLocaleDateString(undefined, {
@@ -398,7 +399,8 @@ export default function HistoryScreen() {
                           })}
                         </Text>
                         <Text style={styles.cardMeta}>
-                          {s.candyCount ?? 0} candy · {s.houseCount ?? 0} houses
+                          {s.candyCount ?? 0} candy · {s.houseCount ?? 0}{' '}
+                          {s.houseCount === 1 ? 'house' : 'houses'}
                           {s.costumeName ? ` · ${s.costumeName}` : ''}
                         </Text>
                       </Pressable>

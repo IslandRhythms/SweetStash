@@ -1,8 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { SQLiteProvider } from 'expo-sqlite';
-import { Stack } from 'expo-router';
+import { ThemeProvider as NavThemeProvider, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
@@ -15,17 +14,12 @@ import * as Sentry from '@sentry/react-native';
 Sentry.init({
   dsn: 'https://ef8abed9b50ad8fa68de64ef3c3bca7d@o4510904393334784.ingest.us.sentry.io/4510904395300864',
 
-  // Adds more context data to events (IP address, cookies, user, etc.)
-  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
-  sendDefaultPii: true,
+  // Kids app: never attach IP address, user, or device-identifying data.
+  // See https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: false,
 
   // Enable Logs
   enableLogs: true,
-
-  // Configure Session Replay
-  replaysSessionSampleRate: 0.1,
-  replaysOnErrorSampleRate: 1,
-  integrations: [Sentry.mobileReplayIntegration(), Sentry.feedbackIntegration()],
 
   // uncomment the line below to enable Spotlight (https://spotlightjs.com)
   // spotlight: __DEV__,
@@ -63,7 +57,7 @@ function NavThemeBridge({ children }: { children: React.ReactNode }) {
   const navTheme = {
     dark: theme.dark,
     colors: {
-      primary: theme.colors.primary,
+      primary: theme.colors.primaryText,
       background: theme.colors.background,
       card: theme.colors.surface,
       text: theme.colors.text,

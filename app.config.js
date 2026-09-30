@@ -59,6 +59,11 @@ module.exports = {
       ],
       'expo-router',
       'expo-sqlite',
+      "@sentry/react-native",
+      "expo-font",
+      "expo-splash-screen",
+      "expo-status-bar",
+      "expo-web-browser",
       [
         'expo-image-picker',
         {

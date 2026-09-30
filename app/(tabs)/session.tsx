@@ -20,6 +20,7 @@ import {
 import { AddCandyForm } from '@/components/AddCandyForm';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
 import { HouseStopModal } from '@/components/HouseStopModal';
+import { KeyboardAwareOverlay } from '@/components/KeyboardAwareOverlay';
 import { ImagePreviewModal } from '@/components/ImagePreviewModal';
 import {
   pickImageFromCamera,
@@ -217,9 +218,11 @@ export default function SessionScreen() {
 
   useEffect(() => {
     if (!session) return;
+    let cancelled = false;
 
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
+      if (cancelled) return;
       if (status !== 'granted') {
         Alert.alert(
           'Location needed',
@@ -245,11 +248,17 @@ export default function SessionScreen() {
           setPoints(updated);
         }
       );
+      if (cancelled) {
+        sub.remove();
+        return;
+      }
       subRef.current = sub;
     })();
 
     return () => {
+      cancelled = true;
       subRef.current?.remove();
+      subRef.current = null;
     };
   }, [session?.id, db]);
 
@@ -1009,6 +1018,7 @@ export default function SessionScreen() {
           padding: theme.spacing.lg,
         },
         modalContent: {
+          flexGrow: 0,
           backgroundColor: theme.colors.surface,
           borderRadius: theme.borderRadius.lg,
           padding: theme.spacing.lg,
@@ -1084,7 +1094,7 @@ export default function SessionScreen() {
   if (!ready || !profile) {
     return (
       <View style={[styles.center, styles.container]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -1211,7 +1221,7 @@ export default function SessionScreen() {
             <View style={styles.sessionStatsRow}>
               <View style={styles.sessionStatBox}>
                 <View style={styles.sessionStatIconWrap}>
-                  <FontAwesome name="map-marker" size={18} color={theme.colors.primary} />
+                  <FontAwesome name="map-marker" size={18} color={theme.colors.primaryText} />
                 </View>
                 <View style={styles.sessionStatTextCol}>
                   <Text style={styles.sessionStatValue}>{points.length}</Text>
@@ -1222,7 +1232,7 @@ export default function SessionScreen() {
               </View>
               <View style={styles.sessionStatBox}>
                 <View style={styles.sessionStatIconWrap}>
-                  <FontAwesome name="gift" size={18} color={theme.colors.secondary} />
+                  <FontAwesome name="gift" size={18} color={theme.colors.secondaryText} />
                 </View>
                 <View style={styles.sessionStatTextCol}>
                   <Text style={styles.sessionStatValue}>{sessionCandyCount}</Text>
@@ -1539,7 +1549,7 @@ export default function SessionScreen() {
             setShowCandyModal(false);
           }}
         >
-          <View style={styles.modalOverlay}>
+          <KeyboardAwareOverlay style={styles.modalOverlay}>
             <Pressable
               style={StyleSheet.absoluteFill}
               onPress={() => {
@@ -1610,7 +1620,7 @@ export default function SessionScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.addNewCandyBtn,
-                  { borderColor: theme.colors.primary, marginBottom: theme.spacing.md },
+                  { borderColor: theme.colors.primaryText, marginBottom: theme.spacing.md },
                   pressed && { opacity: 0.8 },
                 ]}
                 onPress={() => {
@@ -1618,8 +1628,8 @@ export default function SessionScreen() {
                   setShowAddCandyModal(true);
                 }}
               >
-                <FontAwesome name="plus-circle" size={18} color={theme.colors.primary} />
-                <Text style={[styles.addNewCandyBtnText, { color: theme.colors.primary }]}>
+                <FontAwesome name="plus-circle" size={18} color={theme.colors.primaryText} />
+                <Text style={[styles.addNewCandyBtnText, { color: theme.colors.primaryText }]}>
                   Add new candy to catalog
                 </Text>
               </Pressable>
@@ -1735,7 +1745,7 @@ export default function SessionScreen() {
                 )}
               </View>
             </DismissKeyboardScrollView>
-          </View>
+          </KeyboardAwareOverlay>
         </Modal>
 
         <Modal
@@ -1747,7 +1757,7 @@ export default function SessionScreen() {
             setShowCandyModal(true);
           }}
         >
-          <View style={styles.modalOverlay}>
+          <KeyboardAwareOverlay style={styles.modalOverlay}>
             <Pressable
               style={StyleSheet.absoluteFill}
               onPress={() => {
@@ -1761,7 +1771,6 @@ export default function SessionScreen() {
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator
-              automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
             >
               <AddCandyForm
                 existingCategories={existingCategories}
@@ -1795,7 +1804,7 @@ export default function SessionScreen() {
                 }}
               />
             </DismissKeyboardScrollView>
-          </View>
+          </KeyboardAwareOverlay>
         </Modal>
 
         <Modal
@@ -1804,7 +1813,7 @@ export default function SessionScreen() {
           animationType="fade"
           onRequestClose={() => setShowHouseModal(false)}
         >
-          <View style={styles.modalOverlay} pointerEvents="box-none">
+          <KeyboardAwareOverlay style={styles.modalOverlay} pointerEvents="box-none">
             <TouchableWithoutFeedback
               onPress={() => {
                 if (!houseModalBackdropReadyRef.current) return;
@@ -1821,7 +1830,6 @@ export default function SessionScreen() {
               keyboardShouldPersistTaps="always"
               keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
               showsVerticalScrollIndicator
-              automaticallyAdjustKeyboardInsets
               nestedScrollEnabled
             >
                 <Text style={styles.modalTitle}>Add house</Text>
@@ -1906,7 +1914,7 @@ export default function SessionScreen() {
                   </Pressable>
                 </View>
               </DismissKeyboardScrollView>
-          </View>
+          </KeyboardAwareOverlay>
         </Modal>
       </View>
     );

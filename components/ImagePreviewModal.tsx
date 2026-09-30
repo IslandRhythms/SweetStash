@@ -92,7 +92,7 @@ export function ImagePreviewModal({ visible, imageUri, onClose }: ImagePreviewMo
 
 const styles = StyleSheet.create({
   root: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.92)',
     zIndex: 1100,
   },
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   imageFrame: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1,
     justifyContent: 'center',
     alignItems: 'center',

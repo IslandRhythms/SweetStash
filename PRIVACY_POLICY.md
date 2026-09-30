@@ -1,7 +1,7 @@
 # SweetStash Privacy Policy
 
 **Effective date:** July 8, 2026  
-**Last updated:** July 8, 2026
+**Last updated:** September 29, 2026
 
 SweetStash ("we," "us," or "our") operates the SweetStash mobile application (the "App"). This Privacy Policy explains what information the App handles, how that information is used, and the choices available to you.
 
@@ -58,14 +58,11 @@ To keep the App reliable, we use **Sentry**, a crash-reporting and diagnostics s
 - Device type, operating system version, and App version
 - Crash logs, error messages, and stack traces
 - General device performance data
-- IP address and related network metadata
-- In some cases, **session replay** data (a recording of on-screen activity around an error) — session replays are sampled for a portion of sessions, and replays are more likely to be captured when an error occurs
-
-Sentry is configured to collect certain default diagnostic data that may include personally identifiable information as defined by Sentry’s documentation. We use this information only to investigate bugs, improve stability, and understand how the App is performing.
+Sentry is configured **not** to collect personally identifiable information: the App does not send IP addresses, user identifiers, or screen recordings (session replay) to Sentry. We use this diagnostic information only to investigate bugs, improve stability, and understand how the App is performing.
 
 Learn more: [Sentry Privacy Policy](https://sentry.io/privacy/)
 
-We do **not** intentionally send your locally stored candy logs, house notes, photos, or route history to Sentry as part of normal App use. However, an error report could theoretically include fragments of on-screen content visible at the time of a crash or in a session replay.
+We do **not** intentionally send your locally stored candy logs, house notes, photos, or route history to Sentry as part of normal App use. However, an error message could theoretically include a fragment of text involved in the error (for example, a candy name).
 
 ### 1.4 Map-related requests
 
@@ -106,7 +103,7 @@ Because your trick-or-treat content stays on your device, it is generally **not*
 
 ## 4. Data Retention
 
-- **On-device data** remains on your device until you delete it in the App, clear App data, or uninstall the App.
+- **On-device data** remains on your device until you clear App data or uninstall the App.
 - **Diagnostic data** retained by Sentry is kept according to Sentry’s retention settings and our configuration. We aim to keep only what is needed for debugging and improvement.
 
 ---
@@ -130,10 +127,10 @@ If you are in the United States, this approach is intended to be consistent with
 You can:
 
 - **Deny or revoke permissions** — in iOS or Android settings at any time
-- **Delete on-device data** — by removing profiles, sessions, or other entries in the App, or by uninstalling the App
+- **Delete on-device data** — by uninstalling the App (or, on Android, clearing the App’s storage in device settings), which removes all profiles, sessions, photos, and other entries
 - **Stop diagnostic collection** — uninstalling the App stops further Sentry reports from that installation; you cannot fully use the App without the diagnostic SDK included in the build
 
-Depending on where you live, you may have additional rights under laws such as the GDPR (EEA/UK) or CCPA/CPRA (California), including rights to access, delete, or object to certain processing. Because most of your App content is stored locally on your device, you can delete it directly as described above. For requests related to data held by our service providers (such as Sentry), contact us and we will respond as required by applicable law.
+Depending on where you live, you may have additional rights under laws such as the GDPR (EEA/UK) or CCPA/CPRA (California), including rights to access, delete, or object to certain processing. Because most of your App content is stored locally on your device, you can delete it yourself as described above. For requests related to data held by our service providers (such as Sentry), contact us and we will respond as required by applicable law.
 
 We do not discriminate against you for exercising privacy rights.
 
@@ -177,8 +174,8 @@ For privacy questions or requests, contact us through the **support URL or conta
 
 For App Store Connect and similar disclosures, the App’s data practices generally include:
 
-**Data linked to you (via third-party diagnostics):**
-- Diagnostics (crash data, performance data) — via Sentry
+**Data not linked to you (via third-party diagnostics):**
+- Diagnostics (crash data, performance data) — via Sentry, without IP addresses or user identifiers
 
 **Data not collected by us on our servers:**
 - User content (candy logs, photos, routes, profile names) — stored on device only

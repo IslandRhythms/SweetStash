@@ -133,7 +133,7 @@ export default function CostumeDetailScreen() {
   if (!ready || !profile) {
     return (
       <View style={[styles.center, styles.container]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -149,7 +149,7 @@ export default function CostumeDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.center, styles.container]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -159,7 +159,7 @@ export default function CostumeDetailScreen() {
       <View style={[styles.center, styles.container]}>
         <Text style={styles.forbidden}>Costume not found.</Text>
         <Pressable onPress={() => router.back()} style={{ marginTop: theme.spacing.lg }}>
-          <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>Go back</Text>
+          <Text style={{ color: theme.colors.primaryText, fontWeight: '600' }}>Go back</Text>
         </Pressable>
       </View>
     );

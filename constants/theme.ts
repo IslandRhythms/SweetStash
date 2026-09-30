@@ -1,3 +1,5 @@
+import type { ColorSchemeName } from 'react-native';
+
 const shared = {
   spacing: {
     xs: 4,
@@ -26,11 +28,13 @@ export const lightTheme = {
   ...shared,
   dark: false as const,
   colors: {
-    headerBackground: '#FF6B00',
-    primary: '#FF6B00',
-    primaryDark: '#E85D04',
+    headerBackground: '#B5562A',
+    primary: '#B5562A',
+    primaryDark: '#8F4220',
+    primaryText: '#B5562A',
     secondary: '#7B2CBF',
     secondaryDark: '#5A189A',
+    secondaryText: '#7B2CBF',
     background: '#FFF8F0',
     surface: '#FFFFFF',
     text: '#1A1A1A',
@@ -46,10 +50,12 @@ export const darkTheme = {
   dark: true as const,
   colors: {
     headerBackground: '#9B4DDF',
-    primary: '#FF8533',
+    primary: '#C2410C',
     primaryDark: '#FF6B00',
+    primaryText: '#FF8533',
     secondary: '#9B4DDF',
     secondaryDark: '#7B2CBF',
+    secondaryText: '#C084FC',
     background: '#1A1A1A',
     surface: '#2D2D2D',
     text: '#F5F5F5',
@@ -62,7 +68,7 @@ export const darkTheme = {
 
 export type Theme = typeof lightTheme | typeof darkTheme;
 
-export function getTheme(colorScheme: 'light' | 'dark' | null | undefined): Theme {
+export function getTheme(colorScheme: ColorSchemeName): Theme {
   return colorScheme === 'dark' ? darkTheme : lightTheme;
 }
 

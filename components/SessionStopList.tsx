@@ -66,7 +66,7 @@ export function SessionStopList({ stops, onStopPress, style }: SessionStopListPr
         indexText: {
           fontSize: theme.fontSize.sm,
           fontWeight: '700',
-          color: theme.colors.textMuted,
+          color: theme.colors.text,
         },
         name: {
           flex: 1,
@@ -103,7 +103,7 @@ export function SessionStopList({ stops, onStopPress, style }: SessionStopListPr
             <View style={styles.indexBadge}>
               <Text style={styles.indexText}>{index + 1}</Text>
             </View>
-            <FontAwesome name="map-marker" size={16} color={theme.colors.secondary} />
+            <FontAwesome name="map-marker" size={16} color={theme.colors.secondaryText} />
             <Text style={styles.name} numberOfLines={2}>
               {stop.name}
             </Text>

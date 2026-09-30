@@ -92,9 +92,11 @@ export default function SessionSummaryScreen() {
   );
 
   useEffect(() => {
-    if (!id) return;
-    const numId = parseInt(id, 10);
-    if (isNaN(numId)) return;
+    const numId = id ? parseInt(id, 10) : NaN;
+    if (isNaN(numId)) {
+      setLoading(false);
+      return;
+    }
 
     (async () => {
       setLoading(true);
@@ -191,7 +193,7 @@ export default function SessionSummaryScreen() {
         title: {
           fontSize: theme.fontSize.xxl,
           fontWeight: 'bold',
-          color: theme.colors.primary,
+          color: theme.colors.primaryText,
           textAlign: 'center',
           marginBottom: theme.spacing.lg,
         },
@@ -304,7 +306,7 @@ export default function SessionSummaryScreen() {
         houseCandyLabel: {
           fontSize: theme.fontSize.md,
           fontWeight: '600',
-          color: theme.colors.secondary,
+          color: theme.colors.secondaryText,
           flex: 1,
         },
         houseListRow: {
@@ -462,10 +464,21 @@ export default function SessionSummaryScreen() {
     [theme]
   );
 
-  if (loading || !session) {
+  if (loading) {
     return (
       <View style={[styles.center, styles.container]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return (
+      <View style={[styles.center, styles.container]}>
+        <Text style={styles.meta}>Session not found.</Text>
+        <Pressable onPress={() => router.replace('/(tabs)')}>
+          <Text style={{ color: theme.colors.primaryText, fontWeight: '600' }}>Go back</Text>
+        </Pressable>
       </View>
     );
   }
@@ -520,12 +533,12 @@ export default function SessionSummaryScreen() {
 
       <View style={styles.stats}>
         <View style={styles.stat}>
-          <FontAwesome name="gift" size={32} color={theme.colors.primary} />
+          <FontAwesome name="gift" size={32} color={theme.colors.primaryText} />
           <Text style={styles.statValue}>{stats.candyCount}</Text>
           <Text style={styles.statLabel}>Pieces of candy</Text>
         </View>
         <View style={styles.stat}>
-          <FontAwesome name="home" size={32} color={theme.colors.secondary} />
+          <FontAwesome name="home" size={32} color={theme.colors.secondaryText} />
           <Text style={styles.statValue}>{stats.houseCount}</Text>
           <Text style={styles.statLabel}>Houses visited</Text>
         </View>

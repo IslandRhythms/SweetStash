@@ -53,7 +53,7 @@ export function HouseStopModal({
     () =>
       StyleSheet.create({
         root: {
-          ...StyleSheet.absoluteFillObject,
+          ...StyleSheet.absoluteFill,
           justifyContent: 'center',
           alignItems: 'center',
           padding: theme.spacing.lg,
@@ -61,7 +61,7 @@ export function HouseStopModal({
           ...Platform.select({ android: { elevation: 1000 } }),
         },
         backdrop: {
-          ...StyleSheet.absoluteFillObject,
+          ...StyleSheet.absoluteFill,
           backgroundColor: 'rgba(0,0,0,0.5)',
         },
         content: {
@@ -108,7 +108,7 @@ export function HouseStopModal({
         },
         closeText: {
           fontSize: theme.fontSize.md,
-          color: theme.colors.primary,
+          color: theme.colors.primaryText,
           fontWeight: '600',
         },
       }),

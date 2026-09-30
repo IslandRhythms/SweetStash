@@ -4,11 +4,11 @@ A child-friendly Halloween app for tracking your trick-or-treat haul. Log candy 
 
 ## Features
 
-- **Home** – Greeting and shortcuts to log your haul or start a trick-or-treat session.
-- **My Stash** – Log candy (name, quantity, optional photo) and houses (name, notes, optional photo). Optionally link candy to your active session. Mark candy and houses as favorites.
-- **Session** – Start a trick-or-treat session, pick or add a costume, and track your route on the map. Add house visits and log candy as you go. End the session to see a summary (route and haul).
-- **History** – Browse past sessions (with candy and house counts). Tap a session to view its route and haul summary.
-- **Settings** – Switch or add profiles (no account required). Set light, dark, or system theme. Optionally load sample data for development.
+- **My Stash** – Candy counter for the current round. Tap candy from the catalog to count pieces, adjust names, quantities, and images, and add new candy to the catalog. Save & restart to store the round (optionally linked to your active session).
+- **Session** – Start a trick-or-treat session and track your route on the map. Add houses with a photo (camera or gallery), name, and notes, then log the candy you got there. Pick or add a costume and take costume photos for the run. End the session to see a summary (route, stops, haul, and costume) and share it with other profiles.
+- **Costumes** – Every costume with its photos across all years. Tap a costume to see its full photo archive.
+- **History** – Browse past sessions (with candy and house counts) and saved stash rounds. Link a stash round to a session. Tap a session to view its summary.
+- **Settings** – Set light, dark, or system theme. Add and edit candy in the catalog. Switch or add profiles (no account required).
 
 ## Setup
 

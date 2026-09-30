@@ -16,6 +16,7 @@ import {
 
 import { AddCandyForm } from '@/components/AddCandyForm';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
+import { KeyboardAwareOverlay } from '@/components/KeyboardAwareOverlay';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -271,7 +272,7 @@ export default function MyStashScreen() {
         candyHeroNumber: {
           fontSize: 56,
           fontWeight: '800',
-          color: theme.colors.primary,
+          color: theme.colors.primaryText,
           lineHeight: 64,
         },
         candyHeroLabel: {
@@ -305,12 +306,12 @@ export default function MyStashScreen() {
           marginBottom: theme.spacing.md,
           borderRadius: theme.borderRadius.md,
           borderWidth: 2,
-          borderColor: theme.colors.primary,
+          borderColor: theme.colors.primaryText,
         },
         addNewCandyBtnText: {
           fontSize: theme.fontSize.md,
           fontWeight: '600',
-          color: theme.colors.primary,
+          color: theme.colors.primaryText,
         },
         tapLabel: {
           fontSize: theme.fontSize.md,
@@ -438,6 +439,8 @@ export default function MyStashScreen() {
           maxWidth: 400,
         },
         modalContentSmall: {
+          flexGrow: 0,
+          zIndex: 1,
           backgroundColor: theme.colors.surface,
           borderRadius: theme.borderRadius.lg,
           padding: theme.spacing.md,
@@ -447,7 +450,6 @@ export default function MyStashScreen() {
         modalContentTiny: {
           maxWidth: 300,
           padding: theme.spacing.md,
-          maxHeight: 200,
           overflow: 'hidden',
           ...Platform.select({
             ios: {
@@ -465,7 +467,7 @@ export default function MyStashScreen() {
         saveModalTitle: {
           fontSize: theme.fontSize.lg,
           fontWeight: '700',
-          color: theme.colors.primary,
+          color: theme.colors.primaryText,
           marginBottom: theme.spacing.sm,
           textAlign: 'center',
         },
@@ -479,6 +481,7 @@ export default function MyStashScreen() {
           paddingVertical: theme.spacing.sm,
           paddingHorizontal: theme.spacing.md,
           fontSize: theme.fontSize.sm,
+          color: theme.colors.text,
           borderRadius: theme.borderRadius.lg,
           borderWidth: 1.5,
           borderColor: theme.colors.border,
@@ -517,7 +520,7 @@ export default function MyStashScreen() {
           backgroundColor: theme.colors.primary,
         },
         modalContentScroll: {
-          maxHeight: Dimensions.get('window').height * 0.65,
+          maxHeight: '65%',
         },
         modalTitle: {
           fontSize: theme.fontSize.xl,
@@ -576,7 +579,7 @@ export default function MyStashScreen() {
         logRowQty: {
           fontSize: theme.fontSize.sm,
           fontWeight: '600',
-          color: theme.colors.primary,
+          color: theme.colors.primaryText,
           minWidth: 28,
           textAlign: 'center',
         },
@@ -632,7 +635,7 @@ export default function MyStashScreen() {
   if (!ready || !profile) {
     return (
       <View style={[styles.center, styles.container]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -654,7 +657,7 @@ export default function MyStashScreen() {
           onPress={() => setCandyExpanded((e) => !e)}
         >
           <View style={styles.sectionHeaderLeft}>
-            <FontAwesome name="gift" size={28} color={theme.colors.primary} />
+            <FontAwesome name="gift" size={28} color={theme.colors.primaryText} />
             <View style={{ flex: 1 }}>
               <Text style={styles.sectionTitle}>Candy counter</Text>
               <Text style={styles.sectionSubtitle}>Tap what you got!</Text>
@@ -700,7 +703,7 @@ export default function MyStashScreen() {
               ]}
               onPress={() => setShowAddCandyModal(true)}
             >
-              <FontAwesome name="plus-circle" size={18} color={theme.colors.primary} />
+              <FontAwesome name="plus-circle" size={18} color={theme.colors.primaryText} />
               <Text style={styles.addNewCandyBtnText}>Add new candy to catalog</Text>
             </Pressable>
 
@@ -796,7 +799,7 @@ export default function MyStashScreen() {
           setEditingName('');
         }}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAwareOverlay style={styles.modalOverlay}>
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={async () => {
@@ -811,7 +814,6 @@ export default function MyStashScreen() {
           />
           <DismissKeyboardScrollView
             style={[styles.modalContentSmall, styles.modalContentScroll]}
-            contentContainerStyle={{ flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
             onStartShouldSetResponder={() => true}
           >
@@ -908,7 +910,7 @@ export default function MyStashScreen() {
                         await loadData();
                       }}
                     >
-                      <FontAwesome name="minus" size={14} color={theme.colors.primary} />
+                      <FontAwesome name="minus" size={14} color={theme.colors.primaryText} />
                     </Pressable>
                     <Text style={styles.logRowQty}>×{group.totalQty}</Text>
                     <Pressable
@@ -927,7 +929,7 @@ export default function MyStashScreen() {
                         await loadData();
                       }}
                     >
-                      <FontAwesome name="plus" size={14} color={theme.colors.primary} />
+                      <FontAwesome name="plus" size={14} color={theme.colors.primaryText} />
                     </Pressable>
                   </View>
                 </View>
@@ -936,7 +938,7 @@ export default function MyStashScreen() {
               </>
             )}
           </DismissKeyboardScrollView>
-        </View>
+        </KeyboardAwareOverlay>
       </Modal>
 
       <Modal
@@ -945,7 +947,7 @@ export default function MyStashScreen() {
         animationType="fade"
         onRequestClose={() => setEditingImageForGroup(null)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAwareOverlay style={styles.modalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setEditingImageForGroup(null)} />
           <DismissKeyboardScrollView
             style={[styles.modalContentSmall, { maxWidth: 280 }]}
@@ -975,7 +977,7 @@ export default function MyStashScreen() {
                   if (path) setEditingImagePath(path);
                 }}
               >
-                <FontAwesome name="camera" size={18} color={theme.colors.primary} />
+                <FontAwesome name="camera" size={18} color={theme.colors.primaryText} />
                 <Text style={styles.checkLabel}>Take photo</Text>
               </Pressable>
               <Pressable
@@ -985,7 +987,7 @@ export default function MyStashScreen() {
                   if (path) setEditingImagePath(path);
                 }}
               >
-                <FontAwesome name="photo" size={18} color={theme.colors.primary} />
+                <FontAwesome name="photo" size={18} color={theme.colors.primaryText} />
                 <Text style={styles.checkLabel}>Gallery</Text>
               </Pressable>
             </View>
@@ -1012,7 +1014,7 @@ export default function MyStashScreen() {
               </Pressable>
             </View>
           </DismissKeyboardScrollView>
-        </View>
+        </KeyboardAwareOverlay>
       </Modal>
 
       <Modal
@@ -1021,7 +1023,7 @@ export default function MyStashScreen() {
         animationType="fade"
         onRequestClose={() => setShowSaveModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAwareOverlay style={styles.modalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowSaveModal(false)} />
           <DismissKeyboardScrollView
             style={[styles.modalContentSmall, styles.modalContentTiny]}
@@ -1046,7 +1048,7 @@ export default function MyStashScreen() {
                 <FontAwesome
                   name={linkToCurrentSession ? 'check-square' : 'square-o'}
                   size={20}
-                  color={theme.colors.primary}
+                  color={theme.colors.primaryText}
                 />
                 <Text style={[styles.checkLabel, { fontSize: theme.fontSize.sm }]}>
                   Link to current trick-or-treat session
@@ -1085,7 +1087,7 @@ export default function MyStashScreen() {
               </Pressable>
             </View>
           </DismissKeyboardScrollView>
-        </View>
+        </KeyboardAwareOverlay>
       </Modal>
 
       <Modal
@@ -1094,7 +1096,7 @@ export default function MyStashScreen() {
         animationType="fade"
         onRequestClose={() => setShowAddCandyModal(false)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAwareOverlay style={styles.modalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setShowAddCandyModal(false)} />
           <DismissKeyboardScrollView
             style={[styles.modalContentSmall, { maxWidth: 400, maxHeight: '85%' }]}
@@ -1129,7 +1131,7 @@ export default function MyStashScreen() {
               }}
             />
           </DismissKeyboardScrollView>
-        </View>
+        </KeyboardAwareOverlay>
       </Modal>
     </View>
   );

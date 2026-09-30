@@ -16,6 +16,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useSQLiteContext } from 'expo-sqlite';
 import { pickImageFromCamera, pickImageFromLibrary } from '@/components/ImagePicker';
 import { DismissKeyboardScrollView } from '@/components/DismissKeyboard';
+import { KeyboardAwareOverlay } from '@/components/KeyboardAwareOverlay';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useTheme, useThemePreference } from '@/contexts/ThemeContext';
 import {
@@ -189,7 +190,7 @@ export default function SettingsScreen() {
           borderWidth: 2,
           borderColor: 'transparent',
         },
-        cardSelected: { borderColor: theme.colors.primary },
+        cardSelected: { borderColor: theme.colors.primaryText },
         cardPressed: { opacity: 0.8 },
         avatar: {
           width: 48,
@@ -275,6 +276,8 @@ export default function SettingsScreen() {
           padding: theme.spacing.lg,
         },
         modalContent: {
+          flexGrow: 0,
+          zIndex: 1,
           backgroundColor: theme.colors.surface,
           borderRadius: theme.borderRadius.lg,
           padding: theme.spacing.lg,
@@ -313,7 +316,7 @@ export default function SettingsScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primaryText} />
       </View>
     );
   }
@@ -343,14 +346,14 @@ export default function SettingsScreen() {
             <FontAwesome
               name={pref === 'light' ? 'sun-o' : pref === 'dark' ? 'moon-o' : 'mobile'}
               size={24}
-              color={themePreference === pref ? theme.colors.primary : theme.colors.textMuted}
+              color={themePreference === pref ? theme.colors.primaryText : theme.colors.textMuted}
               style={{ marginRight: theme.spacing.md }}
             />
             <Text style={styles.cardName}>
               {pref === 'light' ? 'Light' : pref === 'dark' ? 'Dark' : 'Follow device'}
             </Text>
             {themePreference === pref && (
-              <FontAwesome name="check" size={24} color={theme.colors.primary} />
+              <FontAwesome name="check" size={24} color={theme.colors.primaryText} />
             )}
           </Pressable>
         ))}
@@ -420,11 +423,11 @@ export default function SettingsScreen() {
                 onPress={() => handleSelect(p)}
               >
                 <View style={styles.avatar}>
-                  <FontAwesome name="user" size={32} color={theme.colors.primary} />
+                  <FontAwesome name="user" size={32} color={theme.colors.primaryText} />
                 </View>
                 <Text style={styles.cardName}>{p.name}</Text>
                 {profile?.id === p.id && (
-                  <FontAwesome name="check" size={24} color={theme.colors.primary} />
+                  <FontAwesome name="check" size={24} color={theme.colors.primaryText} />
                 )}
               </Pressable>
             ))}
@@ -478,7 +481,7 @@ export default function SettingsScreen() {
         animationType="fade"
         onRequestClose={() => setCandyModal(null)}
       >
-        <View style={styles.modalOverlay}>
+        <KeyboardAwareOverlay style={styles.modalOverlay}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setCandyModal(null)} />
           <DismissKeyboardScrollView
             style={styles.modalContent}
@@ -552,7 +555,7 @@ export default function SettingsScreen() {
               </Pressable>
             </View>
           </DismissKeyboardScrollView>
-        </View>
+        </KeyboardAwareOverlay>
       </Modal>
 
       <View style={styles.spacer} />
